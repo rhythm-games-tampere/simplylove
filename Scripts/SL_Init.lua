@@ -52,6 +52,7 @@ local PlayerDefaults = {
 				-- While SL no longer supports disabling individual timing windows
 				-- in ITG mode, Casual mode still does so we still track it here.
 				TimingWindows = {true, true, true, true, true},
+				LaneCover="0%",
 				ShowFaPlusWindow = false,
 				ShowExScore = false,
 				ShowFaPlusPane = true,
