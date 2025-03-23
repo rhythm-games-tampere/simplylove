@@ -356,23 +356,13 @@ local t = Def.ActorFrame {
 			-- The first element becomes the top and bottomtext for the category.
 			-- The second element's table contains that options will show under this category.
 			-- It follows the same structure as the top level table.
-			
-			-- Casual players often choose the wrong mode and an experienced player in the area may notice this
-			-- and offer to switch them back to casual mode. This allows them to do so again.
-			-- It's technically not possible to reach the sort menu in Casual Mode, but juuust in case let's still
-			-- include the check.
-			{ { "", "GoBack" } },
-			{ {"NextPlease", "SwitchProfile"}, ThemePrefs.Get("AllowScreenSelectProfile") },
-			{ {"GrooveStats", "Leaderboard"}, function() return GAMESTATE:GetCurrentSong() ~= nil end },
-			{ {"WhereforeArtThou", "SongSearch"}, not GAMESTATE:IsCourseMode() and ThemePrefs.Get("KeyboardFeatures") },
-			{ {"ImLovinIt", "AddFavorite"}, function() return GAMESTATE:GetCurrentSong() ~= nil end},
-			{ {"MixTape", "Preferred"}, AddFavorites },
-			{ {"ChangeMode", "Casual"}, SL.Global.Stages.PlayedThisGame == 0 and SL.Global.GameMode ~= "Casual" },	
-			{ 
 
-				{"", "CategorySorts"}, 
+			{ {"NextPlease", "SwitchProfile"}, ThemePrefs.Get("AllowScreenSelectProfile") },
+			{ {"WhereforeArtThou", "SongSearch"}, not GAMESTATE:IsCourseMode() and ThemePrefs.Get("KeyboardFeatures") },
+			{
+				{"", "CategorySorts"},
 				{
-					{{"SortBy", "Group"} },
+					{ {"SortBy", "Group"} },
 					{ {"SortBy", "Title"} },
 					{ {"SortBy", "Artist"} },
 					{ {"SortBy", "Genre"} },
@@ -382,11 +372,6 @@ local t = Def.ActorFrame {
 					{ {"SortBy", "Popularity"} },
 					{ {"SortBy", "Recent"} },
 					{ {"SortBy", "TopGrades"} },
-				}
-			},
-			{
-				{"", "CategoryProfile"},
-				{
 					{ {"SortBy", "PopularityP1"}, function() return PROFILEMAN:IsPersistentProfile(PLAYER_1) end },
 					{ {"SortBy", "RecentP1"}, function() return PROFILEMAN:IsPersistentProfile(PLAYER_1) end },
 					{ {"SortBy", "TopP1Grades"}, function() return PROFILEMAN:IsPersistentProfile(PLAYER_1) end },
@@ -397,24 +382,20 @@ local t = Def.ActorFrame {
 				}
 			},
 			{
-				{"", "CategoryAdvanced"},
-				{
-					{ {"FeelingSalty", "TestInput"}, GAMESTATE:IsEventMode() },
-					{ {"HardTime", "PracticeMode"}, PracticeModeAvailable },
-					{ {"TakeABreather", "LoadNewSongs"} },
-					{ {"NeedMoreRam", "ViewDownloads"}, DownloadsExist },
-					{ {"SetSummaryText", "SetSummary"}, SL.Global.Stages.PlayedThisGame > 0 },
-					{ {"BottomText", "OnlineLobbies"}, ThemePrefs.Get("EnableOnlineLobbies") and GAMESTATE:IsEventMode() },
-				}
-			},
-			{
-				{"", "CategoryStyles"},
-				GetChangeableStyles,
-			},
-			{
 				{"", "CategoryPlaylists"},
 				AddPlaylists,
-			}
+			},
+			{ {"ImLovinIt", "AddFavorite"}, function() return GAMESTATE:GetCurrentSong() ~= nil end},
+			{ {"HardTime", "PracticeMode"}, PracticeModeAvailable },
+			{ {"GrooveStats", "Leaderboard"}, function() return GAMESTATE:GetCurrentSong() ~= nil end },
+			{ {"SetSummaryText", "SetSummary"}, SL.Global.Stages.PlayedThisGame > 0 },
+			{ {"NeedMoreRam", "ViewDownloads"}, DownloadsExist },
+			{ {"TakeABreather", "LoadNewSongs"} },
+			{ {"BottomText", "OnlineLobbies"}, ThemePrefs.Get("EnableOnlineLobbies") and GAMESTATE:IsEventMode() },
+			{ {"ChangeStyle", "Double"}, function() return GAMESTATE:GetCurrentStyle():GetName() == "single" end },
+			{ {"ChangeStyle", "Single"}, function() return GAMESTATE:GetCurrentStyle():GetName() == "double" end },
+			{ {"FeelingSalty", "TestInput"}, GAMESTATE:IsEventMode() },
+			{ { "", "GoBack" }, PREFSMAN:GetPreference("ThreeKeyNavigation") },
 		}
 		self:visible(false)
 	end,
