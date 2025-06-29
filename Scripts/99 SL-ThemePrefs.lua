@@ -351,8 +351,36 @@ SL_CustomPrefs.Get = function()
 			Choices =  { THEME:GetString("ThemePrefs","Yes"), THEME:GetString("ThemePrefs", "No") },
 			Values  = { true, false }
 		},
+
+		MusicWheelTechNotation = {
+			Default = "No",
+			Choices = {
+				THEME:GetString("ThemePrefs", "Verbose"),
+				THEME:GetString("ThemePrefs", "Condensed"),
+				THEME:GetString("ThemePrefs", "No")
+			},
+			Values = { "Verbose", "Condensed", "No" }
+		},
+
+		MusicWheelScore = {
+			Default = MusicWheelScore_No,
+			Choices =  {
+				THEME:GetString("ThemePrefs", "No"),
+				THEME:GetString("ThemePrefs", "Yes"),
+				THEME:GetString("ThemePrefs", "ReplaceGrade")
+			},
+			Values = {
+				MusicWheelScore_No,
+				MusicWheelScore_Yes,
+				MusicWheelScore_ReplaceGrade
+			}
+		},
 	}
 end
+
+MusicWheelScore_No = "No"
+MusicWheelScore_Yes = "Yes"
+MusicWheelScore_ReplaceGrade = "ReplaceGrade"
 
 SL_CustomPrefs.Validate = function()
 	local file = IniFile.ReadFile("Save/ThemePrefs.ini")
