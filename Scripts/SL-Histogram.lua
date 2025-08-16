@@ -56,6 +56,7 @@ local function gen_vertices(player, width, height, Steps, desaturation)
 		local TimingData = Steps:GetTimingData()
 		local FirstSecond = math.min(TimingData:GetElapsedTimeFromBeat(0), 0)
 		local LastSecond = Song:GetLastSecond()
+		local TimeSigs = TimingData:GetTimeSignatures(true)
 
 		-- magic numbers obtained from Photoshop's Eyedrop tool in rgba percentage form (0 to 1)
 		local blue   = {0,    0.678, 0.753, 1}
@@ -75,15 +76,16 @@ local function gen_vertices(player, width, height, Steps, desaturation)
 
 		local upper
 
+		local beat = 0
+		local timeSigIndex = 1
+		-- i will represent the current measure number but will be 1 larger than
+		-- it should be (measures in SM start at 0; indexed Lua tables start at 1)
 		for i, nps in ipairs(NPSperMeasure) do
 
 			if nps > 0 then first_step_has_occurred = true end
 
 			if first_step_has_occurred then
-				-- i will represent the current measure number but will be 1 larger than
-				-- it should be (measures in SM start at 0; indexed Lua tables start at 1)
-				-- subtract 1 from i now to get the actual measure number to calculate time
-				t = TimingData:GetElapsedTimeFromBeat((i-1)*4)
+				t = TimingData:GetElapsedTimeFromBeat(beat)
 
 				x = scale(t, FirstSecond, LastSecond, 0, width)
 				y = round(-1 * scale(nps, 0, PeakNPS, 0, height))
@@ -108,6 +110,16 @@ local function gen_vertices(player, width, height, Steps, desaturation)
 					verts[#verts+1] = {{x, 0, 0}, blue} -- bottom of graph (blue)
 					verts[#verts+1] = {{x, y, 0}, upper}  -- top of graph (somewhere between blue and purple)
 				end
+			end
+
+			local timeSig = TimeSigs[timeSigIndex]
+			beat = beat + timeSig[2] * 4 / timeSig[3]
+			if timeSigIndex < #TimeSigs and beat >= TimeSigs[timeSigIndex + 1][1] then
+				-- The next time signature starts here.
+				timeSigIndex = timeSigIndex + 1
+				-- Time signature change is always the start of a new measure
+				-- (matches the logic in TimingData::NoteRowToMeasureAndBeat).
+				beat = TimeSigs[timeSigIndex][1]
 			end
 		end
 
