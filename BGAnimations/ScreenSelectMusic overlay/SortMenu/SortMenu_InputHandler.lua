@@ -59,7 +59,17 @@ local input = function(event)
 					screen:SetNextScreenName("ScreenSelectMusicCasual")
 					screen:StartTransitioningScreen("SM_GoToNextScreen")
 				end
-				-- the player wants to change styles, for example from single to double
+
+			-- Change between Course (aka Marathon aka Nonstop) and Regular mode.
+			elseif focus.kind == "ChangePlayMode" then
+				GAMESTATE:SetCurrentPlayMode(focus.change)
+				-- Reload the SortMenu's available options and queue "DirectInputToEngine"
+				-- to return input from Lua back to the engine and hide the SortMenu from view
+				sortmenu:playcommand("AssessAvailableChoices"):queuecommand("DirectInputToEngine")
+				screen:SetNextScreenName("ScreenSelectMusic")
+				screen:StartTransitioningScreen("SM_GoToNextScreen")
+
+			-- the player wants to change styles, for example from single to double
 			elseif focus.kind == "ChangeStyle" then
 				-- If the MenuTimer is in effect, we need to make sure the current number of seconds
 				-- remaining is preserved so we can reinstate it later. ShowPressStartForOptions
