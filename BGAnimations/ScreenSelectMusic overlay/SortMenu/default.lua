@@ -235,6 +235,9 @@ local function AddSorts()
 end
 
 local function AddPlaylists()
+	if GAMESTATE:IsCourseMode() then
+		return {}
+	end
 
 	-- First add the machine playlists
 	local player_sort_options = {}
@@ -402,6 +405,8 @@ local t = Def.ActorFrame {
 			{ {"NeedMoreRam", "ViewDownloads"}, DownloadsExist },
 			{ {"TakeABreather", "LoadNewSongs"} },
 			{ {"BottomText", "OnlineLobbies"}, ThemePrefs.Get("EnableOnlineLobbies") and GAMESTATE:IsEventMode() },
+			{ {"ChangePlayMode", "Nonstop"}, function() return SL.Global.GameMode == "ITG" and not GAMESTATE:IsCourseMode() end },
+			{ {"ChangePlayMode", "Regular"}, function() return  SL.Global.GameMode == "ITG" and GAMESTATE:IsCourseMode() end },
 			{ {"ChangeStyle", "Double"}, function() return GAMESTATE:GetCurrentStyle():GetName() == "single" end },
 			{ {"ChangeStyle", "Single"}, function() return GAMESTATE:GetCurrentStyle():GetName() == "double" end },
 			{ {"FeelingSalty", "TestInput"}, GAMESTATE:IsEventMode() },

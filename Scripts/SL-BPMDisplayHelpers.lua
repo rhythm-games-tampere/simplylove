@@ -2,6 +2,7 @@ local GetTrailBPMs = function(player, trail)
 	if not player then return false end
 	trail = trail or GAMESTATE:GetCurrentTrail(player)
 	if not trail then return false end
+	if not trail.GetTrailEntries then return false end
 
 	local lowest, highest
 
