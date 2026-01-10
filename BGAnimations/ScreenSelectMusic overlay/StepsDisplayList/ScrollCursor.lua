@@ -46,7 +46,7 @@ end
 -- The sprite has empty space around the actual content, need to offset a little
 local scroll_cursor_sprite_offset = 2
 
--- Try to match comparison logic in StepsToDisplay.lua 
+-- Try to match comparison logic in StepsToDisplay.lua
 local function steps_eq(steps1, steps2)
     return steps1:GetDifficulty()  == steps2:GetDifficulty()
        and steps1:GetDescription() == steps2:GetDescription()
@@ -60,8 +60,12 @@ t[#t + 1] = scroll_cursor(
     function (bg_height) return bg_height / 2 + scroll_cursor_sprite_offset end,
     function (self, playable_steps, steps_to_display)
         local last_playable = playable_steps[#playable_steps]
-        local last_displayed = steps_to_display[#steps_to_display]
-        self:visible(not steps_eq(last_playable, last_displayed))
+        local last_displayed = steps_to_display[5]
+        if last_displayed then
+            self:visible(not steps_eq(last_playable, last_displayed))
+        else
+            self:visible(false)
+        end
      end
 )
 
@@ -72,7 +76,11 @@ t[#t + 1] = scroll_cursor(
     function (self, playable_steps, steps_to_display)
         local first_playable = playable_steps[1]
         local first_displayed = steps_to_display[1]
-        self:visible(not steps_eq(first_playable, first_displayed))
+        if first_displayed then
+            self:visible(not steps_eq(first_playable, first_displayed))
+        else
+            self:visible(false)
+        end
     end
 )
 
