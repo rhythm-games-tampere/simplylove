@@ -388,7 +388,7 @@ local t = Def.ActorFrame {
 			-- The second element's table contains that options will show under this category.
 			-- It follows the same structure as the top level table.
 
-			{ {"NextPlease", "SwitchProfile"}, ThemePrefs.Get("AllowScreenSelectProfile") },
+			{ {"NextPlease", "SwitchProfile"} },
 			{ {"WhereforeArtThou", "SongSearch"}, not GAMESTATE:IsCourseMode() and ThemePrefs.Get("KeyboardFeatures") },
 			{
 				{"", "CategorySorts"},
