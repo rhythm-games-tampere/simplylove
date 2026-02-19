@@ -76,7 +76,7 @@ end
 
 local af = Def.ActorFrame{
 	InitCommand=function(self)
-		self:xy(GetNotefieldX(player), yOffset)
+		self:xy( GetNotefieldX(player), yOffset)
 		local zoom_factor = 1 - scale( mods.Mini:gsub("%%","")/100, 0, 2, 0, 1)
 		self:zoomx( zoom_factor )
 		self:queuecommand("SetUpdate")

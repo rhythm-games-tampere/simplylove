@@ -111,16 +111,13 @@ GetNotefieldX = function( player )
 
 	local style = GAMESTATE:GetCurrentStyle()
 	if not style then return end
-	local styletype = style and style:GetStyleType() or nil
 
 	local p = ToEnumShortString(player)
 	local game = GAMESTATE:GetCurrentGame():GetName()
 	local mods = SL[p].ActiveModifiers
 
-	local isCenteredSoloPlay = IsPlayingSoloCentered()
-
 	-- If the song is CenteredSoloplay, use notefieldX offset for centered play.
-	if isCenteredSoloPlay then return _screen.cx + mods.NoteFieldOffsetXCenteredPlay end
+	if IsPlayingSoloCentered() then return _screen.cx + mods.NoteFieldOffsetXCenteredPlay end
 
 	-- ortherwise use the player's own notefieldX offset.
 	local PlayerOffset = mods.NoteFieldOffsetX * (player == PLAYER_1 and -1 or 1)
@@ -133,7 +130,7 @@ end
 -- return true if the player is playing double, couple, solo or
 --   as a single player with centered1Player option enabled
 
-IsPlayingSoloCentered = function(player)
+IsPlayingSoloCentered = function()
 	local style = GAMESTATE:GetCurrentStyle()
 	if not style then return false end
 	
