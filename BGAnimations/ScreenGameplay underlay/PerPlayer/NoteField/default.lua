@@ -3,8 +3,6 @@ local pn = ToEnumShortString(player)
 local mods = SL[pn].ActiveModifiers
 local opts = GAMESTATE:GetPlayerState(player):GetCurrentPlayerOptions()
 local layout = GetGameplayLayout(player, opts:Reverse() ~= 0)
-local style = GAMESTATE:GetCurrentStyle()
-local styletype = style and style:GetStyleType() or nil
 
 local af = Def.ActorFrame{
   Name="NoteFieldContainer"..pn,

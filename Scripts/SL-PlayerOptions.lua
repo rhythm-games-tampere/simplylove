@@ -5,8 +5,6 @@
 PlayerMusicWheelScore_No = "No"
 PlayerMusicWheelScore_Yes = "Yes"
 PlayerMusicWheelScore_ReplaceGrade = "Replace Grade"
-local style = GAMESTATE:GetCurrentStyle()
-local styletype = style and style:GetStyleType() or nil
 
 function PlayerMusicWheelScore(pn)
 	return SL[ToEnumShortString(pn)].ActiveModifiers.PlayerMusicWheelScore

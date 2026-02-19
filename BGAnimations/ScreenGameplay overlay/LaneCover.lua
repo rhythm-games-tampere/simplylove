@@ -2,8 +2,6 @@ local player = ...
 local pn = ToEnumShortString(player)
 local mods = SL[pn].ActiveModifiers
 local playeroptions = GAMESTATE:GetPlayerState(player):GetPlayerOptions("ModsLevel_Preferred")
-local style = GAMESTATE:GetCurrentStyle()
-local styletype = style and style:GetStyleType() or nil
 
 local filter = Def.Quad{
     InitCommand=function(self)
@@ -12,8 +10,6 @@ local filter = Def.Quad{
 
         local halfScreen = SCREEN_CENTER_X
         local quarterScreen = halfScreen / 2
-
-        local notefieldWidth = GetNotefieldWidth(player)
 
         -- P1 notefield is at 25% and P2 notefield is at 75% X-position and moved from there
         local playerNotefieldPosition = player == PLAYER_1 and quarterScreen or halfScreen + quarterScreen
@@ -29,7 +25,7 @@ local filter = Def.Quad{
 		self:diffuse(Color.Black)
 		    :addx(playerNotefieldPosition + adjusted_offset_x)
 			:y(_screen.cy + (headerHeight / 2))
-            :zoomto(notefieldWidth, _screen.h - headerHeight)
+            :zoomto(GetNotefieldWidth(player), _screen.h - headerHeight)
 
         if (playeroptions:UsingReverse()) then
             self:cropbottom(1 - percentage)
