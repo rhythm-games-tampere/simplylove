@@ -22,7 +22,7 @@ local permitted_profile_settings = {
 	HoldJudgment     = "string",
 	BackgroundFilter = "string",
 	NoteFieldOffsetX = "number",
-	NoteFieldOffsetXDouble = "number",
+	NoteFieldOffsetXCenteredPlay = "number",
 	NoteFieldOffsetY = "number",
 	VisualDelay      = "string",
 

@@ -10,9 +10,11 @@ local af = Def.ActorFrame{
   Name="NoteFieldContainer"..pn,
   OnCommand=function(self)
     local adjusted_offset_x = mods.NoteFieldOffsetX * (player == PLAYER_1 and -1 or 1)
+    
+	  local isCenteredSoloPlay = IsPlayingSoloCentered(player)
 
-    if styletype == "StyleType_OnePlayerTwoSides" or styletype == "StyleType_TwoPlayersSharedSides" then
-        adjusted_offset_x = mods.NoteFieldOffsetXDouble 
+    if isCenteredSoloPlay then
+        adjusted_offset_x = mods.NoteFieldOffsetXCenteredPlay 
     end 
 
     self:addy(mods.NoteFieldOffsetY)

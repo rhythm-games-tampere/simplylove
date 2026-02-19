@@ -1,7 +1,5 @@
 local player = ...
 local pn = ToEnumShortString(player)
-local style = GAMESTATE:GetCurrentStyle()
-local styletype = style and style:GetStyleType() or nil
 
 local mods = SL[pn].ActiveModifiers
 if SL.Global.GameMode == "Casual" then return end
@@ -26,11 +24,6 @@ local curIndex = 1
 local updatedFirstTime = false
 local breakTime = 0
 local text = nil
-local notefieldXDoubleAdjustment = 0 
-
-if styletype == "StyleType_OnePlayerTwoSides" or styletype == "StyleType_TwoPlayersSharedSides" then
-    notefieldXDoubleAdjustment = mods.NoteFieldOffsetXDouble 
- end 
 
 local font = mods.ComboFont
 if font == "Wendy" or font == "Wendy (Cursed)" then
@@ -83,7 +76,7 @@ end
 
 local af = Def.ActorFrame{
 	InitCommand=function(self)
-		self:xy( (GetNotefieldX(player) + notefieldXDoubleAdjustment), yOffset)
+		self:xy(GetNotefieldX(player), yOffset)
 		local zoom_factor = 1 - scale( mods.Mini:gsub("%%","")/100, 0, 2, 0, 1)
 		self:zoomx( zoom_factor )
 		self:queuecommand("SetUpdate")

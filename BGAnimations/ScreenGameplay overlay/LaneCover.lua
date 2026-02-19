@@ -19,10 +19,11 @@ local filter = Def.Quad{
         local playerNotefieldPosition = player == PLAYER_1 and quarterScreen or halfScreen + quarterScreen
         local adjusted_offset_x = mods.NoteFieldOffsetX * (player == PLAYER_1 and -1 or 1)
 
-        if styletype == "StyleType_OnePlayerTwoSides" or styletype == "StyleType_TwoPlayersSharedSides" then
-           notefieldWidth = SCREEN_CENTER_X * 2
+        local isCenteredSoloPlay = IsPlayingSoloCentered(player)
+
+        if isCenteredSoloPlay then
            playerNotefieldPosition = halfScreen
-           adjusted_offset_x = 0
+           adjusted_offset_x =  mods.NoteFieldOffsetXCenteredPlay
         end 
 
 		self:diffuse(Color.Black)

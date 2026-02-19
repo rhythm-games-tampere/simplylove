@@ -111,24 +111,47 @@ GetNotefieldX = function( player )
 
 	local style = GAMESTATE:GetCurrentStyle()
 	if not style then return end
+	local styletype = style and style:GetStyleType() or nil
 
 	local p = ToEnumShortString(player)
 	local game = GAMESTATE:GetCurrentGame():GetName()
+	local mods = SL[p].ActiveModifiers
 
-	local IsPlayingDanceSolo = (style:GetStepsType() == "StepsType_Dance_Solo")
-	local NumPlayersEnabled  = GAMESTATE:GetNumPlayersEnabled()
-	local NumSidesJoined     = GAMESTATE:GetNumSidesJoined()
-	local IsUsingSoloSingles = PREFSMAN:GetPreference('Center1Player') or IsPlayingDanceSolo or (NumSidesJoined==1 and (game=="techno" or game=="kb7"))
+	local isCenteredSoloPlay = IsPlayingSoloCentered()
 
-	-- dance solo is always centered
-	if IsUsingSoloSingles and NumPlayersEnabled == 1 and NumSidesJoined == 1 then return _screen.cx end
-	-- double is always centered
-	if style:GetStyleType() == "StyleType_OnePlayerTwoSides" then return _screen.cx end
+	-- If the song is CenteredSoloplay, use notefieldX offset for centered play.
+	if isCenteredSoloPlay then return _screen.cx + mods.NoteFieldOffsetXCenteredPlay end
 
-	local PlayerOffset = SL[p].ActiveModifiers.NoteFieldOffsetX * (player == PLAYER_1 and -1 or 1)
+	-- ortherwise use the player's own notefieldX offset.
+	local PlayerOffset = mods.NoteFieldOffsetX * (player == PLAYER_1 and -1 or 1)
 
 	local NumPlayersAndSides = ToEnumShortString( style:GetStyleType() )
 	return THEME:GetMetric("ScreenGameplay","Player".. p .. NumPlayersAndSides .."X") + PlayerOffset
+end
+
+-- -----------------------------------------------------------------------
+-- return true if the player is playing double, couple, solo or
+--   as a single player with centered1Player option enabled
+
+IsPlayingSoloCentered = function(player)
+	local style = GAMESTATE:GetCurrentStyle()
+	if not style then return false end
+	
+	local styletype = style:GetStyleType()
+	local stepstype = style:GetStepsType()
+	local game = GAMESTATE:GetCurrentGame():GetName()
+
+	local IsPlayingDanceSolo = (stepstype == "StepsType_Dance_Solo")
+	local NumPlayersEnabled  = GAMESTATE:GetNumPlayersEnabled()
+	local NumSidesJoined     = GAMESTATE:GetNumSidesJoined()
+
+	local isDoubleOrCouple	 = styletype == "StyleType_OnePlayerTwoSides" or styletype == "StyleType_TwoPlayersSharedSides" 
+	local IsUsingSoloSingles = PREFSMAN:GetPreference('Center1Player') or IsPlayingDanceSolo or (NumSidesJoined==1 and (game=="techno" or game=="kb7"))
+	
+	local isCenteredSoloPlay = (IsUsingSoloSingles and NumPlayersEnabled == 1 and NumSidesJoined == 1) or isDoubleOrCouple
+
+	if isCenteredSoloPlay then return true end
+	return false
 end
 
 -- -----------------------------------------------------------------------
