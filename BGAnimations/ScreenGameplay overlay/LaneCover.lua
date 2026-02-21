@@ -15,6 +15,11 @@ local filter = Def.Quad{
         local playerNotefieldPosition = player == PLAYER_1 and quarterScreen or halfScreen + quarterScreen
         local adjusted_offset_x = mods.NoteFieldOffsetX * (player == PLAYER_1 and -1 or 1)
 
+        if IsPlayingSoloCentered() then
+           playerNotefieldPosition = halfScreen
+           adjusted_offset_x =  mods.NoteFieldOffsetXCenteredPlay
+        end 
+
 		self:diffuse(Color.Black)
 		    :addx(playerNotefieldPosition + adjusted_offset_x)
 			:y(_screen.cy + (headerHeight / 2))

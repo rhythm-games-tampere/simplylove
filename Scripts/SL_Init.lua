@@ -59,6 +59,7 @@ local PlayerDefaults = {
 				ShowFaPlusPane = true,
 
 				NoteFieldOffsetX = 0,
+				NoteFieldOffsetXCenteredPlay = 0,
 				NoteFieldOffsetY = 0,
 
 				PlayerMusicWheelScore = PlayerMusicWheelScore_No

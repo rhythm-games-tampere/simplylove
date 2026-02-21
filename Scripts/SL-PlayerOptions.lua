@@ -763,6 +763,36 @@ local Overrides = {
 		end
 	},
 	-------------------------------------------------------------------------
+	NoteFieldOffsetXCenteredPlay = {
+		LayoutType = "ShowOneInRow",
+		ExportOnChange = true,
+		Choices = function()
+			local first	= -200
+			local last 	= 200
+			local step 	= 1
+
+			return range(first, last, step)
+		end,
+		LoadSelections = function(self, list, pn)
+			local val = tonumber(SL[ToEnumShortString(pn)].ActiveModifiers.NoteFieldOffsetXCenteredPlay) or 0
+			for i,v in ipairs(self.Choices) do
+				if v == val then
+					list[i] = true
+					break
+				end
+			end
+			return list
+		end,
+		SaveSelections = function(self, list, pn)
+			for i,v in ipairs(self.Choices) do
+				if list[i] then
+					SL[ToEnumShortString(pn)].ActiveModifiers.NoteFieldOffsetXCenteredPlay = v
+					break
+				end
+			end
+		end
+	},
+	-------------------------------------------------------------------------
 	NoteFieldOffsetY = {
 		LayoutType = "ShowOneInRow",
 		ExportOnChange = true,
