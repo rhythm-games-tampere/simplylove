@@ -9,9 +9,12 @@ local af = Def.ActorFrame{
   OnCommand=function(self)
     local adjusted_offset_x = mods.NoteFieldOffsetX * (player == PLAYER_1 and -1 or 1)
 
+    if IsPlayingSoloCentered() then
+        adjusted_offset_x = mods.NoteFieldOffsetXCenteredPlay 
+    end 
+
     self:addy(mods.NoteFieldOffsetY)
     local player = GetPlayerAF(pn)
-    
     player:addx(adjusted_offset_x)
     player:addy(mods.NoteFieldOffsetY)
 
