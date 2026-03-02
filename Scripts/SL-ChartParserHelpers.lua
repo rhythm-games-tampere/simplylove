@@ -109,7 +109,7 @@ GenerateBreakdownText = function(pn, minimization_level)
 	if #SL[pn].Streams.NotesPerMeasure == 0 then return 'Not available!' end
 
 	-- Assume 16ths for the breakdown text
-	local segments = GetStreamSequences(SL[pn].Streams.NotesPerMeasure, 16)
+	local segments = SL[pn].Streams.StreamSequences16ths
 	local text_segments = {}
 
 	-- The following is used for level 2 and 3 minimization levels.
@@ -209,7 +209,7 @@ GetTotalStreamAndBreakMeasures = function(pn)
 	local totalStream, totalBreak = 0, 0
 
 	-- Assume 16ths for the breakdown text
-	local segments = GetStreamSequences(SL[pn].Streams.NotesPerMeasure, 16)
+	local segments = SL[pn].Streams.StreamSequences16ths
 	for i, segment in ipairs(segments) do
 		local segment_size = segment.streamEnd - segment.streamStart
 		if segment.isBreak then
