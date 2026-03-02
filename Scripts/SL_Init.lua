@@ -74,6 +74,7 @@ local PlayerDefaults = {
 
 				-- Information parsed out from the chart.
 				NotesPerMeasure = {},
+				StreamSequences16ths = {},
 				PeakNPS = 0,
 				NPSperMeasure = {},
 				columnCues = {},

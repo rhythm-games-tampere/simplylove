@@ -417,6 +417,7 @@ local MaybeCopyFromOppositePlayer = function(pn, filename, stepsType, difficulty
 			SL[opposite_player].Streams.Description == description) then
 		-- If so then just copy everything over.
 		SL[pn].Streams.NotesPerMeasure = SL[opposite_player].Streams.NotesPerMeasure
+		SL[pn].Streams.StreamSequences16ths = SL[opposite_player].Streams.StreamSequences16ths
 		SL[pn].Streams.PeakNPS = SL[opposite_player].Streams.PeakNPS
 		SL[pn].Streams.NPSperMeasure = SL[opposite_player].Streams.NPSperMeasure
 		SL[pn].Streams.ColumnCues = SL[opposite_player].Streams.ColumnCues
@@ -478,6 +479,9 @@ ParseChartInfo = function(steps, pn)
 			end
 		end
 
+		local npsPerMeasure = steps:GetNotesPerMeasure(pn) or {}
+		local streamSequences16ths = GetStreamSequences(npsPerMeasure, 16)
+
 		local techCounts = steps:GetTechCounts(pn)
 		SL[pn].Streams.Crossovers = techCounts:GetValue("TechCountsCategory_Crossovers") or 0
 		SL[pn].Streams.Footswitches = techCounts:GetValue("TechCountsCategory_Footswitches") or 0
@@ -487,7 +491,8 @@ ParseChartInfo = function(steps, pn)
 		SL[pn].Streams.Doublesteps = techCounts:GetValue("TechCountsCategory_Doublesteps") or 0
 		SL[pn].Streams.TechNotation = SLTechNotation_Format(steps, pn, TechNotationVerboseKey)
 
-		SL[pn].Streams.NotesPerMeasure = steps:GetNotesPerMeasure(pn) or {}
+		SL[pn].Streams.NotesPerMeasure = npsPerMeasure
+		SL[pn].Streams.StreamSequences16ths = streamSequences16ths
 		SL[pn].Streams.PeakNPS = steps:GetPeakNps(pn) or 0
 		SL[pn].Streams.NPSperMeasure = steps:GetNpsPerMeasure(pn) or {}
 		SL[pn].Streams.ColumnCues = steps:GetColumnCues(pn) or {}
