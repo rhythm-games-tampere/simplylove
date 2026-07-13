@@ -416,6 +416,12 @@ SL_CustomPrefs.Get = function()
 			Choices = { THEME:GetString("ThemePrefs","Yes"), THEME:GetString("ThemePrefs","No") },
 			Values = { true, false },
 		},
+
+		TitleMenuMusic = {
+			Default = "Silent",
+			Choices = { "Silent", "Moomin" },
+			Values  = { "Silent", "Moomin" },
+		},
 	}
 end
 
