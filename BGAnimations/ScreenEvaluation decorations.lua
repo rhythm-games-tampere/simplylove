@@ -64,6 +64,19 @@ af[#af+1] = LoadFont("Wendy/_wendy monospace numbers")..{
 }
 
 -----------------------------------------------------------------------
+-- if a ScreenEvaluationTitle is set in ThemePrefs.ini, append it to the default header text 
+decorations[#decorations+1] = Def.Actor{
+	OnCommand=function(self)
+		local title = ThemePrefs.Get("ScreenEvaluationTitle")
+		local screen = SCREENMAN:GetTopScreen()
+		if screen and type(title) == "string" and title ~= "" then
+			local default_text = THEME:GetString(screen:GetName(), "HeaderText")
+			MESSAGEMAN:Broadcast("SetHeaderText", { Text = default_text .. " - " .. title })
+		end
+	end
+}
+
+-----------------------------------------------------------------------
 -- finally, add the DateTimeAF to the decorations ActorFrame
 decorations[#decorations+1] = af
 

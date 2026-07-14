@@ -422,6 +422,10 @@ SL_CustomPrefs.Get = function()
 			Choices = { "Silent", "Moomin" },
 			Values  = { "Silent", "Moomin" },
 		},
+
+		ScreenEvaluationTitle = {
+			Default = "",
+		},
 	}
 end
 
