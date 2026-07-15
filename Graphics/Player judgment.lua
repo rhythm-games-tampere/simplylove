@@ -146,26 +146,54 @@ return Def.ActorFrame{
 		local frame = TNSFrames[ param.TapNoteScore ]
 		if not frame then return end
 
+		-- sprite_alpha lets us fade the highest judgment by a player-chosen percentage
+		-- (0% = fully opaque, 100% = fully invisible), or fade it to preview a
+		-- near-miss Fantastic as a translucent guideline
+		local sprite_alpha = 1
+		local highest_transparency_string = (mods.FantasticTransparency or "0%"):gsub("%%", "")
+		local highest_transparency_pct = tonumber(highest_transparency_string) or 0
+		local highest_alpha = 1 - (highest_transparency_pct / 100)
+
 		-- If the judgment font contains a graphic for the additional white fantastic window...
 		if sprite:GetNumStates() == 7 or sprite:GetNumStates() == 14 then
 			if tns == "W1" then
 				if mods.ShowFaPlusWindow then
-					-- If this W1 judgment fell outside of the FA+ window, show the white window
+					-- frame 0 is the "blue" Fantastic (the highest judgment, closest to 0 offset)
+					-- frame 1 is the "white" Fantastic (the second-highest judgment, further from 0
+					-- but still within the W1/Fantastic window)
 					--
 					-- Treat Autoplay specially. The TNS might be out of the range, but
 					-- it's a nicer experience to always just display the top window graphic regardless.
 					-- This technically causes a discrepency on the histogram, but it's likely okay.
-					local is_W0 = IsW0TightJudgment(param, player) or (not mods.TighterFantasticWindow and IsW0Judgment(param, player))
-					if not is_W0 and not IsAutoplay(player) then
+					local offset = math.abs(param.TapNoteOffset)
+					local prefs = SL.Preferences["FA+"]
+					local scale = PREFSMAN:GetPreference("TimingWindowScale")
+					local blue_boundary = 0.010 * scale + prefs["TimingWindowAdd"]
+					-- The guideline previews the upcoming white Fantastic in the last few ms
+					-- before the player falls out of the blue window, not after.
+					local guideline_width = 0.003
+					local guideline_start = blue_boundary - guideline_width
+
+					if offset > blue_boundary and not IsAutoplay(player) then
+						-- Genuinely outside the blue window: white Fantastic, fully opaque.
 						frame = 1
-						
+
 						for col,tapnote in pairs(param.Notes) do
 							local tnt = ToEnumShortString(tapnote:GetTapNoteType())
 							if tnt == "Tap" or tnt == "HoldHead" or tnt == "Lift" then
 								GetPlayerAF(pn):GetChild("NoteField"):did_tap_note(col, "TapNoteScore_W1", --[[bright]] true)
 							end
 						end
+					elseif mods.ShowTransparentGuidelines and offset > guideline_start and not IsAutoplay(player) then
+						-- Still inside the blue window, but close enough to the edge to warn
+						-- the player they're about to lose it: preview white at reduced alpha.
+						frame = 1
+						sprite_alpha = 0.4
+					else
+						sprite_alpha = highest_alpha
 					end
+				else
+					sprite_alpha = highest_alpha
 				end
 				-- We don't need to adjust the top window otherwise.
 			else
@@ -174,6 +202,8 @@ return Def.ActorFrame{
 				-- In that case, we need to shift the Way Off down to a Miss
 				frame = frame + 1
 			end
+		elseif tns == "W1" then
+			sprite_alpha = highest_alpha
 		end
 
 
@@ -188,6 +218,7 @@ return Def.ActorFrame{
 		self:playcommand("Reset")
 
 		sprite:visible(true):setstate(frame)
+		sprite:diffusealpha(sprite_alpha)
 
 		if mods.JudgmentTilt then
 			if tns ~= "Miss" then
