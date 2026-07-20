@@ -655,7 +655,7 @@ local Overrides = {
 		Values = { "ErrorBarUp", "ErrorBarMultiTick" },
 	},
 	-------------------------------------------------------------------------
-	FantasticTransparency = {
+	FantasticOpacity = {
 		LayoutType = "ShowOneInRow",
 		Choices = function()
 			local first	= 0
@@ -666,9 +666,15 @@ local Overrides = {
 		end,
 	},
 	-------------------------------------------------------------------------
-	FantasticGuideline = {
-		SelectType = "SelectMultiple",
-		Values = { "ShowTransparentGuidelines" },
+	SafeguardOpacity = {
+		LayoutType = "ShowOneInRow",
+		Choices = function()
+			local first	= 0
+			local last 	= 100
+			local step 	= 1
+
+			return stringify( range(first, last, step), "%g%%")
+		end,
 	},
 	-------------------------------------------------------------------------
 	MeasureCounter = {

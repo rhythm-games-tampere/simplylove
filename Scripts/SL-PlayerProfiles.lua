@@ -76,8 +76,8 @@ local permitted_profile_settings = {
 	ShowExScore            = "boolean",
 	ShowFaPlusPane         = "boolean",
 	TighterFantasticWindow = "boolean",
-	FantasticTransparency     = "string",
-	ShowTransparentGuidelines = "boolean",
+	FantasticOpacity = "string",
+	SafeguardOpacity = "string",
 
 	HideEarlyDecentWayOffJudgments = "boolean",
 	HideEarlyDecentWayOffFlash     = "boolean",
