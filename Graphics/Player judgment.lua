@@ -91,7 +91,7 @@ end
 local function FantasticBand(param)
 	local ms       = math.abs(param.TapNoteOffset) * 1000
 	local w0_outer = GetTimingWindow(1, "FA+", mods.TighterFantasticWindow) * 1000
-	local band     = mods.TighterFantasticWindow and 3 or 5
+	local band     = mods.TighterFantasticWindow and 2 or 5
 	local core     = math.max(0, w0_outer - band)
 
 	if ms > w0_outer then
