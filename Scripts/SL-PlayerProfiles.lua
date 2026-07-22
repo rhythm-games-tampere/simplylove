@@ -76,6 +76,8 @@ local permitted_profile_settings = {
 	ShowExScore            = "boolean",
 	ShowFaPlusPane         = "boolean",
 	TighterFantasticWindow = "boolean",
+	ShowJudgmentPercentages = "boolean",
+	ShowFaPlusStar          = "boolean",
 
 	HideEarlyDecentWayOffJudgments = "boolean",
 	HideEarlyDecentWayOffFlash     = "boolean",

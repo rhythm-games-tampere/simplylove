@@ -439,7 +439,7 @@ local Overrides = {
 				return { "ShowFaPlusWindow" }
 			end
 
-			return { "ShowFaPlusWindow", "ShowExScore", "ShowFaPlusPane", "TighterFantasticWindow" }
+			return { "ShowFaPlusWindow", "ShowExScore", "ShowFaPlusPane", "TighterFantasticWindow", "ShowJudgmentPercentages", "ShowFaPlusStar" }
 		end,
 		LoadSelections = function(self, list, pn)
 			local mods = SL[ToEnumShortString(pn)].ActiveModifiers
@@ -452,6 +452,8 @@ local Overrides = {
 			list[2] = mods.ShowExScore or false
 			list[3] = mods.ShowFaPlusPane and true
 			list[4] = mods.TighterFantasticWindow or false
+			list[5] = mods.ShowJudgmentPercentages or false
+			list[6] = mods.ShowFaPlusStar or false
 			return list
 		end,
 		SaveSelections = function(self, list, pn)
@@ -472,6 +474,8 @@ local Overrides = {
 			mods.ShowExScore = list[2]
 			mods.ShowFaPlusPane = list[3]
 			mods.TighterFantasticWindow = list[4]
+			mods.ShowJudgmentPercentages = list[5]
+			mods.ShowFaPlusStar = list[6]
 			-- Default to FA+ pane if either options are active.
 			sl_pn.EvalPanePrimary = ((list[1] or list[2]) and list[3]) and 2 or 1
 		end

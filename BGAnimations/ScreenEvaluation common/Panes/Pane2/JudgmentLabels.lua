@@ -63,9 +63,13 @@ end
 -- The positioning logic breaks if we get to 7 digits, please nobody hit a million Fantastics
 local maxCount = 1
 local counts = GetExJudgmentCounts(player)
+-- totalNotes = sum of every judged window (W0..Miss); used as the denominator
+-- for the per-judgment percentage drawn above each label.
+local totalNotes = 0
 for i=1, #TapNoteScores.Types do
 	local window = TapNoteScores.Types[i]
 	local number = counts[window] or 0
+	totalNotes = totalNotes + number
 	if number > maxCount then maxCount = number end
 end
 
@@ -90,6 +94,31 @@ for i=1, #TapNoteScores.Types do
 				self:diffuse( TapNoteScores.Colors[i] )
 			end
 		}
+
+		-- small "(25%)" percentage of total judged notes, tucked into the gap
+		-- above each label. Deliberately small so it fits the existing 26px row
+		-- spacing without pushing anything out of the designed area.
+		-- Only drawn when the player enabled "Show Judgment Percentages".
+		if SL[pn].ActiveModifiers.ShowJudgmentPercentages then
+		local pct = totalNotes > 0 and ((counts[TapNoteScores.Types[i]] or 0) / totalNotes * 100) or 0
+		t[#t+1] = LoadFont("Common Normal")..{
+			Text=("%d%%"):format(math.floor(pct + 0.5)),
+			InitCommand=function(self) self:zoom(0.45):horizalign(right):maxwidth(76) end,
+			BeginCommand=function(self)
+				self:x( (controller == PLAYER_1 and 28) or -28 )
+				-- keep the percentage right-aligned with the label if it shifts left
+				if maxCount > 9999 then
+					local length = math.floor(math.log10(maxCount)+1)
+					local modifier = controller == PLAYER_1 and -11*(length-4) or 11*(length-4)
+					local finalPos = 28 + modifier
+					self:x( (controller == PLAYER_1 and finalPos) or -finalPos )
+				end
+				-- centered in the gap between this label and the row above it
+				self:y(i*26 -42.5 -13)
+				self:diffuse( TapNoteScores.Colors[i] )
+			end
+		}
+		end
 		if i==1 and SL[pn].ActiveModifiers.TighterFantasticWindow then
 			local displayTight = true
 

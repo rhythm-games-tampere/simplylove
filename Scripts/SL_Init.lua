@@ -63,6 +63,8 @@ local PlayerDefaults = {
 				ShowFaPlusWindow = false,
 				ShowExScore = false,
 				ShowFaPlusPane = true,
+				ShowJudgmentPercentages = false,
+				ShowFaPlusStar = false,
 
 				NoteFieldOffsetX = 0,
 				NoteFieldOffsetXCenteredPlay = 0,
