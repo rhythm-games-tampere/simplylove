@@ -95,7 +95,7 @@ for i=1, #TapNoteScores.Types do
 			end
 		}
 
-		-- small "(25%)" percentage of total judged notes, tucked into the gap
+		-- small "25%" percentage of total judged notes, tucked into the gap
 		-- above each label. Deliberately small so it fits the existing 26px row
 		-- spacing without pushing anything out of the designed area.
 		-- Only drawn when the player enabled "Show Judgment Percentages".
@@ -105,7 +105,7 @@ for i=1, #TapNoteScores.Types do
 			Text=("%d%%"):format(math.floor(pct + 0.5)),
 			InitCommand=function(self) self:zoom(0.45):horizalign(right):maxwidth(76) end,
 			BeginCommand=function(self)
-				self:x( (controller == PLAYER_1 and 28) or -28 )
+				self:x( (controller == PLAYER_1 and -21) or -77 )
 				-- keep the percentage right-aligned with the label if it shifts left
 				if maxCount > 9999 then
 					local length = math.floor(math.log10(maxCount)+1)

@@ -74,8 +74,8 @@ return Def.ActorFrame{
 		InitCommand=function(self)
 			self:zoom(0.08):diffuse(Color.White)
 			-- outer side: left edge of the box for P1, right edge for P2
-			self:x( (controller == PLAYER_1) and 8 or -9 )
-			self:y( -18)
+			self:x( (controller == PLAYER_1) and 12 or -144 )
+			self:y( -20)
 			self:visible(showStar)
 		end
 	}
