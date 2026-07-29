@@ -65,6 +65,8 @@ local PlayerDefaults = {
 				ShowFaPlusPane = true,
 				ShowJudgmentPercentages = false,
 				ShowFaPlusStar = false,
+				FantasticOpacity = "100%",
+				SafeguardOpacity = "0%",
 
 				NoteFieldOffsetX = 0,
 				NoteFieldOffsetXCenteredPlay = 0,

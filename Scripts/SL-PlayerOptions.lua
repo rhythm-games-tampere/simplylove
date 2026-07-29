@@ -878,6 +878,20 @@ local Overrides = {
 		end,
 	},
 	-------------------------------------------------------------------------
+	FantasticOpacity = {
+		LayoutType = "ShowOneInRow",
+		Choices = function()
+			return stringify( range(0, 100, 1), "%g%%")
+		end,
+	},
+	-------------------------------------------------------------------------
+	SafeguardOpacity = {
+		LayoutType = "ShowOneInRow",
+		Choices = function()
+			return stringify( range(0, 100, 1), "%g%%")
+		end,
+	},
+	-------------------------------------------------------------------------
 	ScreenAfterPlayerOptions = {
 		Values = function()
 			local choices = { "Gameplay", "Select Music", "Options2", "Options3"  }

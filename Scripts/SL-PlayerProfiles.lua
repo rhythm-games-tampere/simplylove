@@ -78,6 +78,8 @@ local permitted_profile_settings = {
 	TighterFantasticWindow = "boolean",
 	ShowJudgmentPercentages = "boolean",
 	ShowFaPlusStar          = "boolean",
+	FantasticOpacity       = "string",
+	SafeguardOpacity       = "string",
 
 	HideEarlyDecentWayOffJudgments = "boolean",
 	HideEarlyDecentWayOffFlash     = "boolean",
