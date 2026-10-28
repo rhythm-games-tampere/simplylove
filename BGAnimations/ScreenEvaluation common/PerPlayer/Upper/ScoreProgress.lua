@@ -91,47 +91,30 @@ end
 
 local current, lamp, best_score, best_lamp
 
--- Builds the body text plus a list of {start, len, color} byte ranges for the lamp names.
-local function BuildBody(rank, total, board, gsRank, gsIsEx)
-	local parts, marks, len = {}, {}, 0
-	local function append(s, clr)
-		if clr then marks[#marks + 1] = { start = len, len = #s, color = clr } end
-		parts[#parts + 1] = s
-		len = len + #s
-	end
+local Layout = {
+	HeroZoom = 1.5, LampZoom = 1, RowZoom = 1.2,
+	Pad = 6, ColumnGap = 0, Gap = 6, RowGap = 4, BottomPad = 6,
+	RuleAlpha = 0.25,
+	Gray = "#9a9a9a", Dim = "#6e6e6e",
+	Offset = { Hero = 0, Lamp = 0, Rule = 0, Rows = 0 },
+}
 
-	if pss:GetFailed() then
-		append("vs Best: --.--%")
-	else
-		append(("vs Best: %+.2f%%"):format(current - (best_score or 0)))
-	end
+local Gray = color(Layout.Gray)
+local Dim = color(Layout.Dim)
+local Positive = LampColors[4]
+local Negative = LampColors[6]
 
-	-- clear type
-	append("\n")
-	if best_lamp and LampRank[lamp] > (LampRank[best_lamp] or 0) then
-		append(LampNames[best_lamp] or "?", LampColors[best_lamp] or Color.White)
-		append(" >>> ")
-	end
-	append(LampNames[lamp], LampColors[lamp])
+local contentLeft = -(paneWidth - borderWidth) / 2 + Layout.Pad
+local contentRight = (paneWidth - borderWidth) / 2 - Layout.Pad
+local contentWidth = contentRight - contentLeft
+local bodyTop = -paneHeight/2 + RowHeight * 3/2
+local innerBottom = (paneHeight - borderWidth) / 2
 
-	-- ac rank
-	if rank then
-		append(("\nAC Rank: #%d"):format(rank))
-		if total then append((" / %d"):format(total)) end
-		if board then append((" (%s)"):format(board)) end
-	elseif rank == false then
-		-- fetched, but the player has no passing play on the ArrowCloud leaderboard
-		append("\nAC Rank: none")
-	end
-
-	-- gs rank
-	if gsRank then
-		append(("\nGS Rank: #%d"):format(gsRank))
-		-- the handler falls back to the other board when GrooveStats returned no EX board
-		if gsIsEx ~= (score_type == CacheType.EX) then append(gsIsEx and " (EX)" or " (ITG)") end
-	end
-
-	return table.concat(parts), marks
+-- Rank rows as {label, value, dimmed suffix}
+local function RankRow(label, rank, total)
+	if rank == nil then return { label = label, value = "" } end
+	if rank == false then return { label = label, value = "none", dimValue = true } end
+	return { label = label, value = ("#%d"):format(rank), suffix = total and ("/%d"):format(total) }
 end
 
 local af = Def.ActorFrame{
@@ -149,16 +132,57 @@ local af = Def.ActorFrame{
 	end,
 
 	DrawCommand=function(self)
-		local text, marks = BuildBody(self.rank, self.total, self.board, self.gsRank, self.gsIsEx)
-		local body = self:GetChild("BodyText")
-		ScaleAndColorizeBody(body, text, paneHeight - borderWidth, paneWidth - borderWidth, RowHeight, Color.White)
-		for mark in ivalues(marks) do
-			body:AddAttribute(mark.start, { Length=mark.len, Diffuse=mark.color })
+		local hero = self:GetChild("Hero")
+		if pss:GetFailed() then
+			hero:settext("Failed"):diffuse(Negative)
+		else
+			local delta = current - (best_score or 0)
+			hero:settext(("%+.2f%%"):format(delta)):diffuse(delta < 0 and Negative or Positive)
 		end
+
+		local lampText = self:GetChild("Lamp")
+		local lampName = LampNames[lamp]
+
+		if lamp ~= 6 and LampRank[lamp] > (best_lamp and LampRank[best_lamp] or 0) then
+			local bestName = best_lamp and LampNames[best_lamp] or "None"
+			lampText:settext(bestName .. " › " .. lampName):ClearAttributes():diffuse(Dim)
+			lampText:AddAttribute(#bestName, { Length=3, Diffuse=Gray })
+			lampText:AddAttribute(#bestName + 3, { Length=#lampName, Diffuse=LampColors[lamp] })
+		else
+			lampText:settext(lampName):ClearAttributes():diffuse(LampColors[lamp])
+		end
+
+		local y = bodyTop
+		hero:y(y + Layout.Offset.Hero)
+		y = y + hero:GetHeight() * Layout.HeroZoom + Layout.Gap
+		lampText:y(y + Layout.Offset.Lamp)
+
+		local rows = { RankRow("AC", self.rank, self.total), RankRow("GS", self.gsRank) }
+		y = innerBottom - Layout.BottomPad
+		for i = #rows, 1, -1 do
+			local label, value, row = self:GetChild("Label"..i), self:GetChild("Value"..i), rows[i]
+			label:settext(row.label)
+			value:settext(row.value .. (row.suffix or "")):ClearAttributes():diffuse(row.dimValue and Gray or Color.White)
+			local maxWidth = contentWidth - label:GetWidth() * Layout.RowZoom - Layout.ColumnGap
+			if row.suffix then
+				if value:GetWidth() * Layout.RowZoom > maxWidth then
+					value:settext(row.value)
+				else
+					value:AddAttribute(#row.value, { Length=#row.suffix, Diffuse=Gray })
+				end
+			end
+			value:maxwidth(maxWidth / Layout.RowZoom)
+			y = y - label:GetHeight() * Layout.RowZoom
+			label:y(y + Layout.Offset.Rows)
+			value:y(y + Layout.Offset.Rows)
+			y = y - Layout.RowGap
+		end
+		self:GetChild("Rule"):y(y + Layout.RowGap - Layout.Gap - 1 + Layout.Offset.Rule)
 	end,
 
+	-- rank is nil when the player is not on the leaderboard they are scoring on
 	SetGrooveStatsRankCommand=function(self, params)
-		self.gsRank, self.gsIsEx = tonumber(params.rank), params.isEx
+		self.gsRank = tonumber(params.rank) or false
 		self:playcommand("Draw")
 	end,
 
@@ -168,9 +192,9 @@ local af = Def.ActorFrame{
 
 		local cancelled = false
 		self.cancel = function() cancelled = true end
-		self.request = ArrowCloudScores.FetchRank(player, steps, score_type, function(rank, total, board)
+		self.request = ArrowCloudScores.FetchRank(player, steps, score_type, function(rank, total)
 			if cancelled or rank == nil then return end
-			self.rank, self.total, self.board = rank, total, board
+			self.rank, self.total = rank, total
 			self:playcommand("Draw")
 		end)
 	end,
@@ -180,7 +204,7 @@ local af = Def.ActorFrame{
 		if self.request then self.request:Cancel() end
 	end,
 
-	-- border, background, header and body copied from EventProgress.lua
+	-- border, background and header copied from EventProgress.lua
 	Def.Quad {
 		InitCommand=function(self)
 			self:zoomto(paneWidth, paneHeight)
@@ -206,14 +230,33 @@ local af = Def.ActorFrame{
 	},
 
 	LoadFont("Common Normal").. {
-		Name="BodyText",
-		Text="",
+		Name="Hero",
+		InitCommand=function(self) self:valign(0):zoom(Layout.HeroZoom) end,
+	},
+
+	LoadFont("Common Normal").. {
+		Name="Lamp",
+		InitCommand=function(self) self:valign(0):zoom(Layout.LampZoom) end,
+	},
+
+	Def.Quad {
+		Name="Rule",
 		InitCommand=function(self)
-			self:valign(0)
-			self:wrapwidthpixels(paneWidth)
-			self:y(-paneHeight/2 + RowHeight * 3/2)
-		end,
+			self:valign(0):zoomto(contentWidth, 1)
+			self:diffuse(Color.White):diffusealpha(Layout.RuleAlpha)
+		end
 	},
 }
+
+for i = 1, 2 do
+	af[#af + 1] = LoadFont("Common Normal").. {
+		Name="Label"..i,
+		InitCommand=function(self) self:valign(0):halign(0):zoom(Layout.RowZoom):x(contentLeft):diffuse(Gray) end,
+	}
+	af[#af + 1] = LoadFont("Common Normal").. {
+		Name="Value"..i,
+		InitCommand=function(self) self:valign(0):halign(1):zoom(Layout.RowZoom):x(contentRight) end,
+	}
+end
 
 return af

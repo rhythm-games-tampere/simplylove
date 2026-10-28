@@ -264,8 +264,9 @@ local AutoSubmitRequestProcessor = function(res, overlay)
 						if upperPane then
 							-- pass the rank to the local score box
 							local scoreBox = upperPane:GetChild("ScoreProgressP"..side)
-							if scoreBox and personalRank then
-								scoreBox:playcommand("SetGrooveStatsRank", { rank=personalRank, isEx=(showExScore and true or false) })
+							if scoreBox then
+								local sameBoard = (showExScore and true or false) == (SL["P"..side].ActiveModifiers.ShowExScore and true or false)
+								scoreBox:playcommand("SetGrooveStatsRank", { rank=sameBoard and personalRank or false })
 							end
 
 							if data[playerStr]["result"] == "score-added" or data[playerStr]["result"] == "improved" then
