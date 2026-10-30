@@ -1,33 +1,10 @@
 local player, x_pos, y_pos = unpack(...)
-local pn = ToEnumShortString(player)
 
-local songsPlayed = 0
-local songTime = 0
-local notesHit = 0
-
--- Use pairs here (instead of ipairs) because this player might have late-joined
--- which will result in nil entries in the Stats table, which halts ipairs.
-for i,stats in pairs(SL[pn].Stages.Stats) do
-	if stats then
-		songsPlayed = songsPlayed + 1
-		songTime = songTime + (stats.duration or 0)
-
-		-- count per-column so jumps/hands count as more than 1 and #COMBOS doesn't inflate the total
-		if stats.column_judgments then
-			for column, judgments in ipairs(stats.column_judgments) do
-				for judgment, judgment_count in pairs(judgments) do
-					-- early hits are stored in a table; skip those
-					if type(judgment_count) == "number" and judgment ~= "Miss" then
-						notesHit = notesHit + judgment_count
-					end
-				end
-			end
-		end
-	end
-end
-
-local sessionTime = SL.Global.TimeAtSessionStart and (GetTimeSinceStart() - SL.Global.TimeAtSessionStart) or songTime
-sessionTime = math.max(sessionTime, songTime)
+local stats = SessionDataForStatistics(player)
+local songsPlayed = stats.songsPlayedThisGame
+local songTime = stats.totalTime
+local sessionTime = stats.sessionTime
+local notesHit = stats.notesHitThisGame
 
 local songRatio = sessionTime > 0 and (songTime / sessionTime) or 0
 

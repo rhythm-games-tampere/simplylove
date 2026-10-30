@@ -37,7 +37,7 @@ for player in ivalues( GAMESTATE:GetHumanPlayers() ) do
 	-- is not documented anywhere. :(
 	SL[pn].Stages.Stats[SL.Global.Stages.PlayedThisGame+1] = {}
 
-	af[#af+1] = LoadActor("./TrackTimeSpentInGameplay.lua", player)
+	af[#af+1] = LoadActor("./TrackSessionStats.lua", player)
 	af[#af+1] = LoadActor("./JudgmentOffsetTracking.lua", player)
 	af[#af+1] = LoadActor("./TrackExScoreJudgments.lua", player)
 	af[#af+1] = LoadActor("./TrackFailTime.lua", player)

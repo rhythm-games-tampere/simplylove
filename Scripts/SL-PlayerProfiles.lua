@@ -120,6 +120,7 @@ LoadGuest = function(player)
 	local stages = SL[pn].Stages
 	SL[pn]:initialize()
 	SL[pn].Stages = stages
+	GetSessionRecord(player)
 end
 
 
@@ -147,6 +148,7 @@ LoadProfileCustom = function(profile, dir)
 		ReadItlFile(player)
 
 		SL[pn].Stages = stages
+		GetSessionRecord(player)
 	end
 
 	if pn and FILEMAN:DoesFileExist(path) then

@@ -8,6 +8,10 @@ if ThemePrefs.Get("WriteCustomScores") then
 	WriteScores()
 end
 
+for player in ivalues(Players) do
+	MarkSessionSongPlayed(player)
+end
+
 local t = Def.ActorFrame{Name="ScreenEval Common"}
 
 if SL.Global.GameMode ~= "Casual" then

@@ -32,6 +32,7 @@ local function CreditsText( player )
 			end
 
 			local stats = SessionDataForStatistics(player)
+			local hasStats = stats.songsPlayedThisGame > 0 or stats.notesHitThisGame > 0
 
 			if not IsUsingWideScreen() then
 				self:settext(str)
@@ -54,14 +55,14 @@ local function CreditsText( player )
 					self:settext(str)
 				elseif (screenName == "ScreenEvaluationStage") or (screenName == "ScreenEvaluationNonstop") or (screenName == "ScreenGameplay") then
 					self:settext(str)
-				elseif player == PLAYER_1 and stats.songsPlayedThisGame > 0 then
+				elseif player == PLAYER_1 and hasStats then
 					self:settext(("%s - 💿 %s | ⏱%s:%s | 👟 %s "):format(
 						str,
 						stats.songsPlayedThisGame,
 						stats.hours,
 						stats.minutes,
 						stats.notesHitThisGame))
-				elseif player == PLAYER_2 and stats.songsPlayedThisGame > 0 then
+				elseif player == PLAYER_2 and hasStats then
 					self:settext((" %s 👟 | %s:%s⏱ | %s 💿 - %s"):format(
 						stats.notesHitThisGame,
 						stats.hours,
