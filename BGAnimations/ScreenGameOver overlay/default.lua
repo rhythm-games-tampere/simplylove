@@ -1,5 +1,8 @@
 local Players = GAMESTATE:GetHumanPlayers();
 
+-- no-op unless enabled in ./Scripts/SL_SessionMockData.lua
+EnsureSessionMockData()
+
 local t = Def.ActorFrame{
 	LoadFont("Wendy/_wendy white")..{
 		Text="GAME",
@@ -33,7 +36,7 @@ local t = Def.ActorFrame{
 
 local line_height = 48
 local profilestats_y = 120
-local horiz_line_y   = 244
+local horiz_line_y   = 240
 
 -- sits just under the "Triple Cheese Burgers" label (second profile line)
 local burger_y = profilestats_y + line_height + 9
@@ -106,8 +109,9 @@ for player in ivalues(Players) do
 
 	t[#t+1] = PlayerStatsAF
 
-	if PROFILEMAN:IsPersistentProfile(player) then
-		local calories = PROFILEMAN:GetProfile(player):GetCaloriesBurnedToday()
+	local mock_calories = SessionMockCalories(player)
+	if mock_calories or PROFILEMAN:IsPersistentProfile(player) then
+		local calories = mock_calories or PROFILEMAN:GetProfile(player):GetCaloriesBurnedToday()
 		local burgerPosition = player == PLAYER_1 and 35 or _screen.w-35
 		local burgerAlignment = player == PLAYER_1 and 1 or -1
 		t[#t+1] = drawCheeseBurgers(burgerPosition, burgerAlignment, calories)

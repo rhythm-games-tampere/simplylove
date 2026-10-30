@@ -3,10 +3,11 @@ local player, x_pos, y_pos = unpack(...)
 local stats = SessionDataForStatistics(player)
 local songsPlayed = stats.songsPlayedThisGame
 local songTime = stats.totalTime
-local sessionTime = stats.sessionTime
+local activeTime = stats.activeTime
 local notesHit = stats.notesHitThisGame
 
-local songRatio = sessionTime > 0 and (songTime / sessionTime) or 0
+-- share of the time this profile was joined that was spent in songs
+local songRatio = activeTime > 0 and (songTime / activeTime) or 0
 
 local Format = LoadActor("./Formatters.lua")
 
@@ -48,7 +49,7 @@ AddText(ScreenString("ThisSession"), 0, 18, 0.95)
 local rows = {
 	{ "💿", ("%d %s"):format(songsPlayed, ScreenString(songsPlayed == 1 and "SongSingular" or "SongPlural")) },
 	{ "👟", ("%s %s"):format(Format.Count(notesHit), ScreenString("Steps")) },
-	{ "⏱", Format.Time(sessionTime) },
+	{ "⏱", Format.Time(songTime) },
 }
 for i,row in ipairs(rows) do
 	local y = 20 + i*28
@@ -74,23 +75,23 @@ af[#af+1] = Def.Quad{
 	end
 }
 af[#af+1] = LoadFont("Common Normal")..{
-	Text=("%s (%d%%)"):format(Format.Time(songTime), math.floor(songRatio*100 + 0.5)),
+	Text=("%s / %s (%d%%)"):format(Format.Time(songTime), Format.Time(activeTime), math.floor(songRatio*100 + 0.5)),
 	InitCommand=function(self)
-		self:halign(0):xy(-bar_w/2 + 5, bar_y):zoom(0.8):maxwidth((bar_w - 10)/0.8):shadowlength(1)
+		self:halign(0):xy(-bar_w/2 + 5, bar_y):zoom(0.7):maxwidth((bar_w - 10)/0.7):shadowlength(1)
 	end
 }
 
--- session time is never shorter than song time, so this hides the whole block
-if sessionTime >= 60 then
-	AddText(ScreenString("NotesPerMinute"), 0, 172, 0.85)
+-- active time is never shorter than song time, so this hides the whole block
+if activeTime >= 60 then
+	AddText(ScreenString("NotesPerMinute"), 0, 170, 0.85)
 
 	local columns = {
-		{ "⏱", NotesPerMinute(sessionTime), -bar_w/4 },
+		{ "⏱", NotesPerMinute(activeTime), -bar_w/4 },
 		{ "💿", NotesPerMinute(songTime),     bar_w/4 },
 	}
 	for column in ivalues(columns) do
-		AddIcon(column[1], column[3], 194)
-		AddText(column[2], column[3], 214, 0.85)
+		AddIcon(column[1], column[3], 196)
+		AddText(column[2], column[3], 220, 0.85)
 	end
 end
 

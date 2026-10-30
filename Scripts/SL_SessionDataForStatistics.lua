@@ -12,15 +12,35 @@ local ProfileKey = function(player)
 	return "Guest" .. ToEnumShortString(player)
 end
 
--- creates the record the first time a profile is seen this session,
--- which is also when that profile's session clock starts
+-- Each profile's active time only counts while it's joined on a side.
+-- activeSince is set while joined; switching away or unjoining moves the elapsed time into activeTime.
+-- There's no event for those, so this runs whenever session data is created or read.
+local SyncActiveTime = function()
+	local now = GetTimeSinceStart()
+	local joined = {}
+	for player in ivalues(GAMESTATE:GetHumanPlayers()) do
+		joined[ProfileKey(player)] = true
+	end
+
+	for key,record in pairs(SL.Global.SessionStats) do
+		if joined[key] and not record.activeSince then
+			record.activeSince = now
+		elseif not joined[key] and record.activeSince then
+			record.activeTime = record.activeTime + (now - record.activeSince)
+			record.activeSince = nil
+		end
+	end
+end
+
+-- creates the record the first time a profile is seen this session
 GetSessionRecord = function(player)
 	local key = ProfileKey(player)
 	local record = SL.Global.SessionStats[key]
 	if not record then
-		record = { started=GetTimeSinceStart(), songTime=0, notesHit=0, stagesPlayed={} }
+		record = { started=GetTimeSinceStart(), activeTime=0, songTime=0, notesHit=0, stagesPlayed={} }
 		SL.Global.SessionStats[key] = record
 	end
+	SyncActiveTime()
 
 	-- remembered for ScreenGameOver, which lists profiles that are no longer joined
 	record.player = player
@@ -56,7 +76,8 @@ local Summarize = function(record)
 		player = record and record.player,
 		avatar = record and record.avatar,
 		totalTime = songTime,
-		sessionTime = math.max(record and (GetTimeSinceStart() - record.started) or 0, songTime),
+		-- time this profile was joined; never shorter than the time spent in songs
+		activeTime = math.max(record and (record.activeTime + (record.activeSince and (GetTimeSinceStart() - record.activeSince) or 0)) or 0, songTime),
 		hours = hours,
 		minutes = minutes,
 		seconds = seconds,
@@ -66,11 +87,13 @@ local Summarize = function(record)
 end
 
 SessionDataForStatistics = function(player)
+	SyncActiveTime()
 	return Summarize(SL.Global.SessionStats[ProfileKey(player)])
 end
 
 -- stats for profiles that played this session but aren't joined right now, oldest first
 InactiveSessionData = function()
+	SyncActiveTime()
 	local active = {}
 	for player in ivalues(GAMESTATE:GetHumanPlayers()) do
 		active[ProfileKey(player)] = true
@@ -93,6 +116,7 @@ end
 
 -- ScreenGameOver stays up longer when there are many profiles' stats to show
 GameOverTimerSeconds = function()
+	EnsureSessionMockData()
 	local seconds = (ThemePrefs.Get("VisualStyle") == "SRPG10") and 135 or 23
 	local profiles = #InactiveSessionData() + #GAMESTATE:GetHumanPlayers()
 	if profiles >= 8 then
