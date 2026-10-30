@@ -8,23 +8,11 @@ local notesHit = stats.notesHitThisGame
 
 local songRatio = sessionTime > 0 and (songTime / sessionTime) or 0
 
-local FormatTime = function(seconds)
-	local hours = math.floor(seconds/3600)
-	local minutes = math.floor((seconds % 3600)/60)
-	if hours > 0 then
-		return ("%d%s %d%s"):format(hours, ScreenString("HoursShort"), minutes, ScreenString("MinutesShort"))
-	end
-	return ("%d%s"):format(minutes, ScreenString("MinutesShort"))
-end
-
-local FormatCount = function(n)
-	if n >= 1000 then return ("%.1fk"):format(n/1000) end
-	return ("%d"):format(n)
-end
+local Format = LoadActor("./Formatters.lua")
 
 local NotesPerHour = function(seconds)
 	if seconds <= 0 then return "0" end
-	return FormatCount(math.floor(notesHit / (seconds/3600) + 0.5))
+	return Format.Count(math.floor(notesHit / (seconds/3600) + 0.5))
 end
 
 -- -----------------------------------------------------------------------
@@ -58,8 +46,8 @@ AddText(ScreenString("ThisSession"), 0, 14, 0.95)
 
 local rows = {
 	{ "💿", ("%d %s"):format(songsPlayed, ScreenString(songsPlayed == 1 and "SongSingular" or "SongPlural")) },
-	{ "👟", ("%s %s"):format(FormatCount(notesHit), ScreenString("Steps")) },
-	{ "⏱", FormatTime(sessionTime) },
+	{ "👟", ("%s %s"):format(Format.Count(notesHit), ScreenString("Steps")) },
+	{ "⏱", Format.Time(sessionTime) },
 }
 for i,row in ipairs(rows) do
 	local y = 20 + i*22
@@ -85,7 +73,7 @@ af[#af+1] = Def.Quad{
 	end
 }
 af[#af+1] = LoadFont("Common Normal")..{
-	Text=("%s (%d%%)"):format(FormatTime(songTime), math.floor(songRatio*100 + 0.5)),
+	Text=("%s (%d%%)"):format(Format.Time(songTime), math.floor(songRatio*100 + 0.5)),
 	InitCommand=function(self)
 		self:halign(0):xy(-bar_w/2 + 5, bar_y):zoom(0.8):maxwidth((bar_w - 10)/0.8):shadowlength(1)
 	end
