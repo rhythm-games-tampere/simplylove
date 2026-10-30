@@ -439,7 +439,7 @@ local Overrides = {
 				return { "ShowFaPlusWindow" }
 			end
 
-			return { "ShowFaPlusWindow", "ShowExScore", "ShowFaPlusPane", "TighterFantasticWindow", "TighterFantasticWindow11", "ShowJudgmentPercentages", "ShowFaPlusStar" }
+			return { "ShowFaPlusWindow", "ShowExScore", "ShowFaPlusPane", "ShowJudgmentPercentages", "ShowFaPlusStar" }
 		end,
 		LoadSelections = function(self, list, pn)
 			local mods = SL[ToEnumShortString(pn)].ActiveModifiers
@@ -451,10 +451,8 @@ local Overrides = {
 			list[1] = mods.ShowFaPlusWindow or false
 			list[2] = mods.ShowExScore or false
 			list[3] = mods.ShowFaPlusPane and true
-			list[4] = mods.TighterFantasticWindow or false
-			list[5] = mods.TighterFantasticWindow11 or false
-			list[6] = mods.ShowJudgmentPercentages or false
-			list[7] = mods.ShowFaPlusStar or false
+			list[4] = mods.ShowJudgmentPercentages or false
+			list[5] = mods.ShowFaPlusStar or false
 			return list
 		end,
 		SaveSelections = function(self, list, pn)
@@ -465,8 +463,6 @@ local Overrides = {
 				mods.ShowFaPlusWindow = list[1]
 				mods.ShowExScore = ThemePrefs.Get("ScoringSystem") == "EX"
 				mods.ShowFaPlusPane = true
-				mods.TighterFantasticWindow = false
-				mods.TighterFantasticWindow11 = false
 				-- Default to FA+ pane in Tournament Mode
 				sl_pn.EvalPanePrimary = 2
 				return
@@ -475,16 +471,29 @@ local Overrides = {
 			mods.ShowFaPlusWindow = list[1]
 			mods.ShowExScore = list[2]
 			mods.ShowFaPlusPane = list[3]
-			-- 10ms and 11ms are mutually exclusive; keep whichever was just turned on.
-			if list[4] and list[5] then
-				if mods.TighterFantasticWindow then list[4] = false else list[5] = false end
-			end
-			mods.TighterFantasticWindow = list[4]
-			mods.TighterFantasticWindow11 = list[5]
-			mods.ShowJudgmentPercentages = list[6]
-			mods.ShowFaPlusStar = list[7]
+			mods.ShowJudgmentPercentages = list[4]
+			mods.ShowFaPlusStar = list[5]
 			-- Default to FA+ pane if either options are active.
 			sl_pn.EvalPanePrimary = ((list[1] or list[2]) and list[3]) and 2 or 1
+		end
+	},
+	-------------------------------------------------------------------------
+	-- Size of the blue Fantastic window in ITG mode. 10ms and 11ms are mutually
+	-- exclusive, so this is a SelectOne row backed by two boolean mods.
+	BlueWindow = {
+		Values = { "BlueWindowDefault", "BlueWindow10ms", "BlueWindow11ms" },
+		LoadSelections = function(self, list, pn)
+			local mods = SL[ToEnumShortString(pn)].ActiveModifiers
+			if mods.TighterFantasticWindow then list[2] = true
+			elseif mods.TighterFantasticWindow11 then list[3] = true
+			else list[1] = true end
+			return list
+		end,
+		SaveSelections = function(self, list, pn)
+			local mods = SL[ToEnumShortString(pn)].ActiveModifiers
+			local allowed = not ThemePrefs.Get("EnableTournamentMode")
+			mods.TighterFantasticWindow = allowed and list[2] or false
+			mods.TighterFantasticWindow11 = allowed and list[3] or false
 		end
 	},
 	-------------------------------------------------------------------------
