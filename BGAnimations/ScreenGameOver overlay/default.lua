@@ -31,10 +31,17 @@ local t = Def.ActorFrame{
 	}
 }
 
+local line_height = 48
+local profilestats_y = 120
+local horiz_line_y   = 244
+
+-- sits just under the "Triple Cheese Burgers" label (second profile line)
+local burger_y = profilestats_y + line_height + 9
+
 local function drawCheeseBurgers(position, align, calories)
 	local burgerHolder = Def.ActorFrame{
 		InitCommand=function(self) 
-			self:xy(position, 205)
+			self:xy(position, burger_y)
 		end
 	}
 
@@ -56,9 +63,6 @@ local function drawCheeseBurgers(position, align, calories)
 	return burgerHolder
 end
 
-local line_height = 58
-local profilestats_y = 138
-local horiz_line_y   = 288
 
 for player in ivalues(Players) do
 
@@ -111,6 +115,6 @@ for player in ivalues(Players) do
 end
 
 -- added last so the cards draw on top of everything else
-t[#t+1] = LoadActor("./InactiveSessionCards.lua")
+t[#t+1] = LoadActor("./InactiveSessionCards.lua", {burger_y - 25, burger_y + 25})
 
 return t

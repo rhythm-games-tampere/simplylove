@@ -1,5 +1,7 @@
 -- small cards for profiles that played this session but aren't joined anymore
 
+local burger_top, burger_bottom = unpack(...)
+
 local data = InactiveSessionData()
 if #data == 0 then return Def.Actor{} end
 
@@ -15,8 +17,8 @@ local area_w = _screen.w - 2*(160 + 10)
 local columns = math.max(1, math.floor((area_w + gap) / (card_w + gap)))
 local num_rows = math.ceil(#data / columns)
 
--- cards are only drawn inside these, never over the band where the burgers are drawn (y 180 - 230)
-local zones = { {10, 180}, {240, _screen.h - 10} }
+-- cards are only drawn inside these, never over the band where the burgers are drawn
+local zones = { {10, burger_top - 6}, {burger_bottom + 8, _screen.h - 10} }
 
 -- row tops when everything fits on screen
 local rows = {}

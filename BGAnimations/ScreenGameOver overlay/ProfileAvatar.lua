@@ -1,7 +1,7 @@
 local player, x_pos = unpack(...)
 
 -- pixel dimension (height, width) to scale avatar to
-local avatar_dim  = 110
+local avatar_dim  = 90
 local avatar_path = GetPlayerAvatarPath(player)
 
 -- player avatar was found; show that
@@ -14,11 +14,12 @@ if avatar_path ~= nil then
 -- no player avatar found, show a fallback avatar instead
 else
 	return Def.ActorFrame{
-		InitCommand=function(self) self:xy(x_pos-avatar_dim*0.5, 12) end,
+		-- the fallback contents are laid out for 110px, so scale them to fit
+		InitCommand=function(self) self:xy(x_pos-avatar_dim*0.5, 12):zoom(avatar_dim/110) end,
 
 		Def.Quad{
 			InitCommand=function(self)
-				self:align(0,0):zoomto(avatar_dim,avatar_dim):diffuse(color("#283239aa"))
+				self:align(0,0):zoomto(110,110):diffuse(color("#283239aa"))
 			end
 		},
 		-- fallback visual (SL visual theme)

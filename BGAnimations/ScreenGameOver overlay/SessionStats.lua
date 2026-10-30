@@ -20,7 +20,7 @@ end
 local panel_w = 150
 local icon_size = 18
 local bar_w = 130
-local bar_h = 20
+local bar_h = 22
 
 local af = Def.ActorFrame{
 	InitCommand=function(self) self:xy(x_pos, y_pos) end,
@@ -42,7 +42,7 @@ local AddText = function(text, x, y, zoom, halign)
 	}
 end
 
-AddText(ScreenString("ThisSession"), 0, 14, 0.95)
+AddText(ScreenString("ThisSession"), 0, 18, 0.95)
 
 local rows = {
 	{ "💿", ("%d %s"):format(songsPlayed, ScreenString(songsPlayed == 1 and "SongSingular" or "SongPlural")) },
@@ -50,13 +50,13 @@ local rows = {
 	{ "⏱", Format.Time(sessionTime) },
 }
 for i,row in ipairs(rows) do
-	local y = 20 + i*22
+	local y = 20 + i*28
 	AddIcon(row[1], -bar_w/2 + icon_size/2, y)
 	AddText(row[2], -bar_w/2 + icon_size + 8, y, 0.9, 0)
 end
 
 -- session bar: the whole width is the session, the fill is time spent in songs
-local bar_y = 112
+local bar_y = 138
 
 af[#af+1] = Def.Quad{
 	InitCommand=function(self) self:y(bar_y):zoomto(bar_w + 2, bar_h + 2):diffuse(color("#000000aa")) end
@@ -79,15 +79,15 @@ af[#af+1] = LoadFont("Common Normal")..{
 	end
 }
 
-AddText(ScreenString("NotesPerHour"), 0, 136, 0.85)
+AddText(ScreenString("NotesPerHour"), 0, 172, 0.85)
 
 local columns = {
 	{ "⏱", NotesPerHour(sessionTime), -bar_w/4 },
 	{ "💿", NotesPerHour(songTime),  bar_w/4 },
 }
 for column in ivalues(columns) do
-	AddIcon(column[1], column[3], 153)
-	AddText(column[2], column[3], 170, 0.85)
+	AddIcon(column[1], column[3], 194)
+	AddText(column[2], column[3], 214, 0.85)
 end
 
 return af
