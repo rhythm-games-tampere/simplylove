@@ -53,9 +53,9 @@ for i=1,#TapNoteScores.Types do
 	local displayTight = true
 
 	if i == 1 then
-		numberTight = counts["W0_10"]
+		numberTight = counts["W0_tight"]
 	elseif i == 2 then
-		numberTight = counts["W1_10"]
+		numberTight = counts["W1_tight"]
 	end
 
 	-- actual numbers
@@ -84,7 +84,7 @@ for i=1,#TapNoteScores.Types do
 			self:y((i-1)*32 -24)
 			self:targetnumber(number)
 
-			if SL[pn].ActiveModifiers.TighterFantasticWindow then
+			if GetTightW0Base(SL[pn].ActiveModifiers) then
 				self:playcommand("Marquee")
 			end
 		end,

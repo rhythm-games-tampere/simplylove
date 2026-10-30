@@ -76,6 +76,7 @@ local permitted_profile_settings = {
 	ShowExScore            = "boolean",
 	ShowFaPlusPane         = "boolean",
 	TighterFantasticWindow = "boolean",
+	TighterFantasticWindow11 = "boolean",
 	ShowJudgmentPercentages = "boolean",
 	ShowFaPlusStar          = "boolean",
 	FantasticOpacity       = "string",

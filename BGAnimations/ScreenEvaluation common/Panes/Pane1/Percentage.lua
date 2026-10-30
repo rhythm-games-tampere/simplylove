@@ -41,5 +41,7 @@ return Def.ActorFrame{
 			self:horizalign(right):zoom(0.585)
 			self:x( (controller == PLAYER_1 and 1.5 or 141))
 		end
-	}
+	},
+
+	LoadActor("../Score11ms.lua", ...)
 }

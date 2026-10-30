@@ -50,12 +50,11 @@ end
 -- -----------------------------------------------------------------------
 -- get timing window in milliseconds
 
-GetTimingWindow = function(n, mode, tighterFantasticWindow)
+GetTimingWindow = function(n, mode, tightBase)
 	local prefs = SL.Preferences[mode or SL.Global.GameMode]
 	local scale = PREFSMAN:GetPreference("TimingWindowScale")
-	if mode == "FA+" and tighterFantasticWindow and n == 1 then
-		-- 8.5ms + 1.5ms
-		return 0.0085 * scale + prefs.TimingWindowAdd
+	if mode == "FA+" and tightBase and n == 1 then
+		return tightBase * scale + prefs.TimingWindowAdd
 	end
 	return prefs["TimingWindowSecondsW"..n] * scale + prefs.TimingWindowAdd
 end
@@ -635,6 +634,17 @@ IsW0Judgment = function(params, player)
 	return false
 end
 
+-- Base (before TimingWindowAdd) of the tighter blue window the player picked, or nil.
+GetTightW0Base = function(mods)
+	if mods.TighterFantasticWindow then return 0.0085 end
+	if mods.TighterFantasticWindow11 then return 0.0095 end
+	return nil
+end
+
+GetTightW0Label = function(mods)
+	return mods.TighterFantasticWindow11 and "11ms" or "10ms"
+end
+
 IsW0TightJudgment = function(params, player)
 	if params.Player ~= player then return false end
 	if params.HoldNoteScore then return false end
@@ -643,9 +653,8 @@ IsW0TightJudgment = function(params, player)
 	if params.TapNoteScore == "TapNoteScore_W1" and SL.Global.GameMode == "ITG"  then
 		local prefs = SL.Preferences["FA+"]
 		local scale = PREFSMAN:GetPreference("TimingWindowScale")
-		local pn = ToEnumShortString(player)
-		-- 8.5ms + 1.5ms
-		local W0 = 0.0085 * scale + prefs["TimingWindowAdd"]
+		local mods = SL[ToEnumShortString(player)].ActiveModifiers
+		local W0 = (GetTightW0Base(mods) or 0.0085) * scale + prefs["TimingWindowAdd"]
 
 		local offset = math.abs(params.TapNoteOffset)
 		if offset <= W0 then
@@ -653,6 +662,60 @@ IsW0TightJudgment = function(params, player)
 		end
 	end
 	return false
+end
+
+-- Always-tracked 11ms check, independent of the player's tighter window option.
+IsW011Judgment = function(params, player)
+	if params.Player ~= player then return false end
+	if params.HoldNoteScore then return false end
+
+	if params.TapNoteScore == "TapNoteScore_W1" and SL.Global.GameMode == "ITG" then
+		local prefs = SL.Preferences["FA+"]
+		local scale = PREFSMAN:GetPreference("TimingWindowScale")
+		local W0 = 0.0095 * scale + prefs["TimingWindowAdd"]
+		return math.abs(params.TapNoteOffset) <= W0
+	end
+	return false
+end
+
+-- -----------------------------------------------------------------------
+-- True when the player's blue window is 11ms, either via the 11ms option
+-- or because the FA+ W0 window itself is 11ms.
+
+Is11msActive = function(player)
+	if SL.Global.GameMode == "Casual" then return false end
+	local mods = SL[ToEnumShortString(player)].ActiveModifiers
+	if mods.TighterFantasticWindow11 and SL.Global.GameMode == "ITG" then return true end
+	return math.abs(GetTimingWindow(1, "FA+") - 0.011) < 0.0001
+end
+
+-- 11ms points = 11ms W0s - dropped holds/rolls - mines hit
+-- 11ms fantastic% = 11ms points / total steps
+Get11msScore = function(player, ex_counts)
+	local w0 = (SL.Global.GameMode == "ITG" and ex_counts.W0_11 or ex_counts.W0) or 0
+	local points = w0 - (ex_counts.LetGo or 0) - (ex_counts.HitMine or 0)
+
+	local StepsOrTrail = (GAMESTATE:IsCourseMode() and GAMESTATE:GetCurrentTrail(player)) or GAMESTATE:GetCurrentSteps(player)
+	local totalSteps = StepsOrTrail:GetRadarValues(player):GetValue("RadarCategory_TapsAndHolds")
+	if totalSteps <= 0 then return points, 0 end
+
+	return points, math.max(0, points / totalSteps)
+end
+
+AnyPlayer11msActive = function()
+	for player in ivalues(GAMESTATE:GetHumanPlayers()) do
+		if Is11msActive(player) then return true end
+	end
+	return false
+end
+
+-- Score string sent to sync start: 11ms points if any local player is on 11ms, EX score otherwise.
+SyncStartScoreString = function(player, ex_score, ex_counts)
+	if AnyPlayer11msActive() then
+		local points = Get11msScore(player, ex_counts)
+		return ("%d"):format(points)
+	end
+	return ("%.2f"):format(ex_score)
 end
 
 -- -----------------------------------------------------------------------
@@ -698,16 +761,16 @@ GetExJudgmentCounts = function(player)
 			-- We need to extract the W0 count in ITG mode.
 			if window == "W1" then
 				local faPlus = SL[pn].Stages.Stats[SL.Global.Stages.PlayedThisGame + 1].ex_counts.W0_total
-				local faPlus10 = SL[pn].Stages.Stats[SL.Global.Stages.PlayedThisGame + 1].ex_counts.W0_10_total
+				local faPlusTight = SL[pn].Stages.Stats[SL.Global.Stages.PlayedThisGame + 1].ex_counts.W0_tight_total
 				-- Subtract FA+ count from the overall fantastic window count.
-				local number10 = number - faPlus10
+				local numberTight = number - faPlusTight
 				number = number - faPlus
 
 				-- Populate the two numbers.
 				counts["W0"] = faPlus
-				counts["W0_10"] = faPlus10
+				counts["W0_tight"] = faPlusTight
 				counts["W1"] = number
-				counts["W1_10"] = number10
+				counts["W1_tight"] = numberTight
 			else
 				if ((window ~= "W4" and window ~= "W5") or
 						-- Only populate decent and way off windows if they're active.

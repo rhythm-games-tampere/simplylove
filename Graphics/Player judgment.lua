@@ -28,7 +28,7 @@ if file_to_load == "None" then
 			if param.Player ~= player then return end
 
 			if ToEnumShortString(param.TapNoteScore) == "W1" and mods.ShowFaPlusWindow then
-				local is_W0 = IsW0TightJudgment(param, player) or (not mods.TighterFantasticWindow and IsW0Judgment(param, player))
+				local is_W0 = IsW0TightJudgment(param, player) or (not GetTightW0Base(mods) and IsW0Judgment(param, player))
 				if not is_W0 and not IsAutoplay(player) then
 					frame = 1
 					if param.Notes ~= nil then
@@ -90,8 +90,8 @@ end
 -- Returns: frame (0 = blue, 1 = white), showingBlue, isSafeguard.
 local function FantasticBand(param)
 	local ms       = math.abs(param.TapNoteOffset) * 1000
-	local w0_outer = GetTimingWindow(1, "FA+", mods.TighterFantasticWindow) * 1000
-	local band     = mods.TighterFantasticWindow and 2 or 5
+	local w0_outer = GetTimingWindow(1, "FA+", GetTightW0Base(mods)) * 1000
+	local band     = GetTightW0Base(mods) and 2 or 5
 	local core     = math.max(0, w0_outer - band)
 
 	if ms > w0_outer then
