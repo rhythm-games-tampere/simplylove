@@ -34,21 +34,22 @@ end
 
 -- -----------------------------------------------------------------------
 
-local af = Def.ActorFrame{ OffCommand=function(self) self:linear(0.1):diffusealpha(0) end }
-
--- only add this InitCommand to the main ActorFrame in EventMode
-if PREFSMAN:GetPreference("EventMode") then
-	af.InitCommand=function(self)
+local af = Def.ActorFrame{
+	OffCommand=function(self) self:linear(0.1):diffusealpha(0) end,
+	InitCommand=function(self)
 		-- TimeAtSessionStart will be reset to nil between game sessions
 		-- thus, if it's currently nil, we're loading ScreenSelectMusic
 		-- for the first time this particular game session
+		-- ScreenGameOver uses it for the session summary, so track it outside EventMode too
 		if SL.Global.TimeAtSessionStart == nil then
 			SL.Global.TimeAtSessionStart = GetTimeSinceStart()
 		end
 
-		self:SetUpdateFunction( UpdateTimer )
+		if PREFSMAN:GetPreference("EventMode") then
+			self:SetUpdateFunction( UpdateTimer )
+		end
 	end
-end
+}
 
 
 -- generic header elements (background Def.Quad, left-aligned screen name)
