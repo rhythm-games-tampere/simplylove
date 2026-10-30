@@ -9,7 +9,7 @@ local player = ...
 local record = GetSessionRecord(player)
 local tracking = false
 
-return Def.Actor{
+return Def.ActorFrame{
 	OnCommand=function(self)
 		tracking = true
 		self:SetUpdateFunction(function(af, dt)

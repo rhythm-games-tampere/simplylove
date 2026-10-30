@@ -10,9 +10,10 @@ local songRatio = sessionTime > 0 and (songTime / sessionTime) or 0
 
 local Format = LoadActor("./Formatters.lua")
 
-local NotesPerHour = function(seconds)
-	if seconds <= 0 then return "0" end
-	return Format.Count(math.floor(notesHit / (seconds/3600) + 0.5))
+-- under a minute of play the rate isn't meaningful, so it's not shown
+local NotesPerMinute = function(seconds)
+	if seconds < 60 then return "-" end
+	return Format.Count(math.floor(notesHit / (seconds/60) + 0.5))
 end
 
 -- -----------------------------------------------------------------------
@@ -79,15 +80,18 @@ af[#af+1] = LoadFont("Common Normal")..{
 	end
 }
 
-AddText(ScreenString("NotesPerHour"), 0, 172, 0.85)
+-- session time is never shorter than song time, so this hides the whole block
+if sessionTime >= 60 then
+	AddText(ScreenString("NotesPerMinute"), 0, 172, 0.85)
 
-local columns = {
-	{ "⏱", NotesPerHour(sessionTime), -bar_w/4 },
-	{ "💿", NotesPerHour(songTime),  bar_w/4 },
-}
-for column in ivalues(columns) do
-	AddIcon(column[1], column[3], 194)
-	AddText(column[2], column[3], 214, 0.85)
+	local columns = {
+		{ "⏱", NotesPerMinute(sessionTime), -bar_w/4 },
+		{ "💿", NotesPerMinute(songTime),     bar_w/4 },
+	}
+	for column in ivalues(columns) do
+		AddIcon(column[1], column[3], 194)
+		AddText(column[2], column[3], 214, 0.85)
+	end
 end
 
 return af

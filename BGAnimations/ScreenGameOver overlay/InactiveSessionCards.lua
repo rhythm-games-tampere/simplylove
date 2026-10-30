@@ -11,6 +11,8 @@ local card_w = 140
 local card_h = 44
 local gap = 8
 local step = card_h + gap
+local avatar_size = 18
+local avatar_gap = 5
 
 -- between the side panels (160px each), with a small margin
 local area_w = _screen.w - 2*(160 + 10)
@@ -85,9 +87,18 @@ for i,stats in ipairs(data) do
 	local top = scrolling and (zones[1][1] + (row-1)*step) or rows[row]
 	local side_color = stats.player and PlayerColor(stats.player) or color("#ffffff")
 
-	af[#af+1] = Def.ActorFrame{
+	local card = Def.ActorFrame{
 		InitCommand=function(self)
 			self:xy(x, top + card_h/2)
+
+			-- center the avatar + name pair; done here because children are all loaded by now
+			if stats.avatar then
+				local name = self:GetChild("Name")
+				local name_w = math.min(name:GetWidth() * 0.85, card_w - 10 - avatar_size - avatar_gap)
+				local w = avatar_size + avatar_gap + name_w
+				name:halign(0):x(-w/2 + avatar_size + avatar_gap)
+				self:GetChild("Avatar"):x(-w/2 + avatar_size/2)
+			end
 			if scrolling then
 				self:diffusealpha(Visibility(top))
 				cards[#cards+1] = { actor=self, top=top }
@@ -101,9 +112,11 @@ for i,stats in ipairs(data) do
 			InitCommand=function(self) self:zoomto(card_w-2, card_h-2):diffuse(color("#000000ee")) end
 		},
 		LoadFont("Common Normal")..{
+			Name="Name",
 			Text=stats.name or "",
 			InitCommand=function(self)
-				self:y(-10):zoom(0.85):maxwidth((card_w-10)/0.85):diffuse(side_color)
+				local text_w = card_w - 10 - (stats.avatar and (avatar_size + avatar_gap) or 0)
+				self:y(-10):zoom(0.85):maxwidth(text_w/0.85):diffuse(side_color)
 			end
 		},
 		LoadFont("Common Normal")..{
@@ -117,6 +130,16 @@ for i,stats in ipairs(data) do
 			end
 		},
 	}
+
+	if stats.avatar then
+		card[#card+1] = Def.Sprite{
+			Name="Avatar",
+			Texture=stats.avatar,
+			InitCommand=function(self) self:y(-10):zoomto(avatar_size, avatar_size) end
+		}
+	end
+
+	af[#af+1] = card
 end
 
 return af

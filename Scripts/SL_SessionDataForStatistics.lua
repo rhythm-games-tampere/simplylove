@@ -27,6 +27,9 @@ GetSessionRecord = function(player)
 	record.name = PROFILEMAN:IsPersistentProfile(player)
 		and PROFILEMAN:GetProfile(player):GetDisplayName()
 		or THEME:GetString("ScreenSelectProfile", "GuestProfile")
+	if PROFILEMAN:IsPersistentProfile(player) then
+		record.avatar = GetPlayerAvatarPath(player)
+	end
 
 	return record
 end
@@ -51,6 +54,7 @@ local Summarize = function(record)
 	return {
 		name = record and record.name,
 		player = record and record.player,
+		avatar = record and record.avatar,
 		totalTime = songTime,
 		sessionTime = math.max(record and (GetTimeSinceStart() - record.started) or 0, songTime),
 		hours = hours,
