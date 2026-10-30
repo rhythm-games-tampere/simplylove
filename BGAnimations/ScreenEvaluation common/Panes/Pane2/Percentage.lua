@@ -68,6 +68,8 @@ return Def.ActorFrame{
 		end
 	},
 
+	LoadActor("../Score11ms.lua", ...),
+
 	-- small star on the outer side of the score, shown only when W0 >= 90%
 	LoadActor(THEME:GetPathG("", "_grades/assets/star.png"))..{
 		Name="BestJudgmentStar",

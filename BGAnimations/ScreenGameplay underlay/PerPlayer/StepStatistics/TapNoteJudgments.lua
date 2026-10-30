@@ -130,7 +130,7 @@ for index, window in ipairs(TNS.Types) do
 			if ShowFaPlusWindow and ToEnumShortString(params.TapNoteScore) == "W1" then
 				local is_W0 = IsW0Judgment(params, player)
 				local is_W0_tight = IsW0TightJudgment(params, player)
-				if SL[pn].ActiveModifiers.TighterFantasticWindow then
+				if GetTightW0Base(SL[pn].ActiveModifiers) then
 					if is_W0_tight and window == "W0" then
 						TNS.Judgments[window] = TNS.Judgments[window] + 1
 						incremented = true
@@ -201,9 +201,9 @@ for index, window in ipairs(TNS.Types) do
 				end,
 			}
 
-			if index == 1 and SL[pn].ActiveModifiers.TighterFantasticWindow	and ShowFaPlusWindow then
+			if index == 1 and GetTightW0Base(SL[pn].ActiveModifiers) and ShowFaPlusWindow then
 				af[#af+1] = LoadFont("Common Normal")..{
-					Text="(10ms)",
+					Text="("..GetTightW0Label(SL[pn].ActiveModifiers)..")",
 					InitCommand=function(self)
 						self:zoom(0.6):maxwidth(72)
 						self:halign( PlayerNumber:Reverse()[player] )
