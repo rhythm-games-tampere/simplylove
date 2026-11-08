@@ -2,6 +2,15 @@
 -- use that as a common base, and add in a Sprite for "Has Edit"
 local af = LoadActor("../MusicWheelItem Course NormalPart.lua")
 
+-- Golf PAR badges are injected after the row's first Set
+af.SetCommand = function(self, params) self.Song = params and params.Song end
+af.GolfBadgesInjectedMessageCommand = function(self)
+	local badge = self:GetParent():GetChild("GolfParBadge")
+	if self.Song and type(badge) == "table" and badge.playcommand then
+		badge:playcommand("Set", { Song = self.Song })
+	end
+end
+
 -- Player-specific actors
 for player in ivalues(PlayerNumber) do
 	if ThemePrefs.Get("MusicWheelTechNotation") ~= "No" then
@@ -15,6 +24,9 @@ for player in ivalues(PlayerNumber) do
 		af[#af + 1] = LoadActor("Score.lua", player)
 	else
 		af[#af + 1] = LoadActor("ITL_EXScore.lua", player)
+	end
+	if type(Golf) == "table" then
+		af[#af + 1] = LoadActor("GolfScore.lua", player)
 	end
 end
 

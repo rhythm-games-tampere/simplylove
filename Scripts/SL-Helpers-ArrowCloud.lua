@@ -3,6 +3,8 @@ local TIMEOUT = 15
 local MAX_HASHES = 1000
 local ERROR_PAUSE = 60
 local LEADERBOARDS = { [CacheType.EX] = 2, [CacheType.ITG] = 3 }
+local GOLF_API = "https://golf.arrowcloud.dance/api"
+local GOLF_PARALLEL = 4
 
 local profile_slot = {
 	[PLAYER_1] = "ProfileSlot_Player1",
@@ -26,9 +28,11 @@ end
 
 ArrowCloudScores = {}
 
--- per player: { pn, key, name, pending = {hash=true}, groups = {name=true}, inflight = {handler, hashes}?, disabled }
+-- per player: { pn, key, name, pending = {hash=true}, groups = {name=true}, inflight = {handler, hashes}?, disabled,
+--               user_id, user_request?, golf = {hash=true}, golf_groups = {name=true}, golf_inflight = {request=true}, golf_count }
 local State = {}
 local PausedUntil = 0
+local SendGolf
 
 local function StateFor(player)
 	local pn = ToEnumShortString(player)
@@ -36,7 +40,8 @@ local function StateFor(player)
 	if key == "" or not PROFILEMAN:IsPersistentProfile(player) then return nil end
 	local s = State[pn]
 	if not s or s.key ~= key then
-		s = { pn = pn, key = key, name = PROFILEMAN:GetPlayerName(player), pending = {}, groups = {} }
+		s = { pn = pn, key = key, name = PROFILEMAN:GetPlayerName(player), pending = {}, groups = {},
+			golf = {}, golf_groups = {}, golf_inflight = {}, golf_count = 0 }
 		State[pn] = s
 	end
 	return s
@@ -45,6 +50,11 @@ end
 local function Queue(s, steps)
 	local hash = steps:GetGrooveStatsHash()
 	if hash and hash ~= "" then s.pending[hash] = true end
+end
+
+local function QueueGolf(s, steps)
+	local hash = steps:GetGrooveStatsHash()
+	if hash and hash ~= "" then s.golf[hash] = true end
 end
 
 local function Failure(response)
@@ -138,24 +148,113 @@ local function Send(s)
 	}
 end
 
+-- GET /user, body.user.id
+local function FetchUserId(s)
+	if s.user_request then return end
+	s.user_request = NETWORK:HttpRequest{
+		url = API .. "/user",
+		method = "GET",
+		headers = { Authorization = "Bearer " .. s.key },
+		connectTimeout = TIMEOUT,
+		transferTimeout = TIMEOUT,
+		onResponse = function(response)
+			if not s.user_request then return end
+			s.user_request = nil
+			local code = response.statusCode
+			if code == 401 or code == 403 then
+				lua.Warn("ArrowCloudScores: HTTP " .. code .. " for " .. s.pn .. ", disabling for this session")
+				s.disabled = true
+				return
+			end
+			local body = not response.error and code == 200 and JsonDecode(response.body)
+			local id = type(body) == "table" and type(body.user) == "table" and body.user.id
+			if not id then
+				lua.Warn("ArrowCloudScores: user lookup failed (" .. Failure(response) .. ")")
+				PausedUntil = GetTimeSinceStart() + ERROR_PAUSE
+				return
+			end
+			s.user_id = tostring(id)
+			SendGolf(s)
+		end,
+	}
+end
+
+-- GET /best?userId&chartHash, body: { previousBestStrokes: number|null } (raw strokes)
+SendGolf = function(s)
+	if s.disabled or GetTimeSinceStart() < PausedUntil or not next(s.golf) then return end
+	if not s.user_id then return FetchUserId(s) end
+	while s.golf_count < GOLF_PARALLEL do
+		local hash = next(s.golf)
+		if not hash then return end
+		s.golf[hash] = nil
+		local request = { hash = hash }
+		s.golf_inflight[request] = true
+		s.golf_count = s.golf_count + 1
+		request.handler = NETWORK:HttpRequest{
+			url = GOLF_API .. "/best?userId=" .. s.user_id .. "&chartHash=" .. hash,
+			method = "GET",
+			connectTimeout = TIMEOUT,
+			transferTimeout = TIMEOUT,
+			onResponse = function(response)
+				if not s.golf_inflight[request] then return end
+				s.golf_inflight[request] = nil
+				s.golf_count = s.golf_count - 1
+				local body = not response.error and response.statusCode == 200 and JsonDecode(response.body)
+				if type(body) ~= "table" then
+					lua.Warn("ArrowCloudScores: golf request failed (" .. Failure(response) .. ")")
+					PausedUntil = GetTimeSinceStart() + ERROR_PAUSE
+					s.golf[hash] = true
+					return
+				end
+				local strokes = tonumber(body.previousBestStrokes)
+				if strokes then
+					CacheSet(s.name, hash, CacheType.Golf, CacheSource.ArrowCloud, ("%d"):format(strokes))
+				else
+					CacheDelete(s.name, hash, CacheType.Golf, CacheSource.ArrowCloud)
+				end
+				MESSAGEMAN:Broadcast("ArrowCloudScoresUpdated")
+				SendGolf(s)
+			end,
+		}
+	end
+end
+
 function ArrowCloudScores.Request(player, song, steps)
 	local s = StateFor(player)
 	if not s or s.disabled then return end
-	if steps then Queue(s, steps) end
+	local golf_event = type(Golf) == "table"
+	if steps then
+		Queue(s, steps)
+		if golf_event and Golf.GetPar(song, steps) then QueueGolf(s, steps) end
+	end
 
 	local group = song:GetGroupName()
-	if not s.groups[group] then
-		s.groups[group] = true
-		for g_song in ivalues(SONGMAN:GetSongsInGroup(group)) do
-			for st in ivalues(SongUtil.GetPlayableSteps(g_song)) do Queue(s, st) end
+	local scores = not s.groups[group]
+	local golf = golf_event and not s.golf_groups[group]
+	if not scores and not golf then return end
+	s.groups[group], s.golf_groups[group] = true, true
+	for g_song in ivalues(SONGMAN:GetSongsInGroup(group)) do
+		for st in ivalues(SongUtil.GetPlayableSteps(g_song)) do
+			if scores then Queue(s, st) end
+			if golf and Golf.GetPar(g_song, st) then QueueGolf(s, st) end
 		end
 	end
+end
+
+function ArrowCloudScores.GolfPlayed(player, hash)
+	local s = StateFor(player)
+	if not s then return end
+	CacheDelete(s.name, hash, CacheType.Golf, CacheSource.ArrowCloud)
+	s.golf[hash] = true
 end
 
 function ArrowCloudScores.Flush()
 	if GetTimeSinceStart() < PausedUntil then return end
 	for _, s in pairs(State) do
-		if not s.disabled and not s.inflight and next(s.pending) then Send(s) end
+		if not s.disabled then
+			if not s.inflight and next(s.pending) then Send(s) end
+			SendGolf(s)
+		end
 	end
 end
 
@@ -166,6 +265,15 @@ function ArrowCloudScores.Cancel()
 			s.inflight = nil
 			request.handler:Cancel()
 			for _, hash in ipairs(request.hashes) do s.pending[hash] = true end
+		end
+		for golf_request in pairs(s.golf_inflight) do
+			golf_request.handler:Cancel()
+			s.golf[golf_request.hash] = true
+		end
+		s.golf_inflight, s.golf_count = {}, 0
+		if s.user_request then
+			s.user_request:Cancel()
+			s.user_request = nil
 		end
 	end
 end

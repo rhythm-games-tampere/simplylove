@@ -75,6 +75,7 @@ for player in ivalues(Players) do
 	-- store player stats for later retrieval on EvaluationSummary and NameEntryTraditional
 	-- this doesn't draw anything to the screen, it just runs some code
 	t[#t+1] = LoadActor("./PerPlayer/Storage.lua", player)
+	t[#t+1] = LoadActor("./PerPlayer/GolfPlayed.lua", player)
 
 	-- the per-player upper half of ScreenEvaluation, including: letter grade, nice
 	-- stepartist, difficulty text, difficulty meter, machine/personal HighScore text
