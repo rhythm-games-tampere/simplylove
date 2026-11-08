@@ -333,6 +333,33 @@ function ArrowCloud.isEligible(player, opts)
   return results
 end
 
+-- Finds the theme's "ScreenEval Common" ActorFrame on the current screen, for the optional
+-- input-priority hooks it may expose (DirectInputToACResultDialog / DirectInputFromACResultDialog).
+-- Returns nil unless every step of the walk yields an actor carrying the method we need next.
+-- The step that matters: when an ActorFrame has more than one child with the requested name,
+-- GetChild returns a plain Lua table of them rather than an actor. That's what happens on
+-- ScreenProfileSave -- OffCommand reaches the "restore" path after the eval screen is already
+-- gone and the top screen has changed -- and a table has no GetChild method, so a plain
+-- `overlay and overlay:GetChild(...)` guard passes (a table is truthy) and then throws,
+-- aborting the rest of whatever command we're in. (Seen 13 times in one session's log:
+-- 'attempt to call method GetChild (a nil value)'.)
+--
+-- Note this cannot be a type() check: actors ARE tables here (ITGmania registers Actor with
+-- LUA_REGISTER_INSTANCED_BASE_CLASS, which pushes a LuaClass table rather than a userdata), so
+-- a userdata test rejects everything and silently disables these hooks entirely.
+local function hasMethod(obj, name)
+  return type(obj) == "table" and type(obj[name]) == "function"
+end
+
+local function findEvalCommon(top)
+  if not hasMethod(top, "GetChild") then return nil end
+  local overlay = top:GetChild("Overlay")
+  if not hasMethod(overlay, "GetChild") then return nil end
+  local evalCommon = overlay:GetChild("ScreenEval Common")
+  if not hasMethod(evalCommon, "queuecommand") then return nil end
+  return evalCommon
+end
+
 -- Utility functions
 debugPrint = function(message)
   if Trace then Trace(MODULE_TAG .. " " .. message) end
@@ -793,7 +820,13 @@ local function sendScoreData(data, apiKey, hash, player, isSilent, onComplete)
 
       -- Log errors only
       if not ok then
-        debugPrint("ArrowCloud submit failed: status=" .. tostring(status) .. (err and (" error=" .. err) or ""))
+        -- Include the chart hash and URL: a 404 here means the server doesn't recognise the
+        -- chart, and without the hash there's no way to tell whether that's an unregistered
+        -- chart or a hash we computed wrongly.
+        debugPrint("ArrowCloud submit failed: status=" .. tostring(status) ..
+          (err and (" error=" .. err) or "") ..
+          " hash=" .. tostring(hash) ..
+          (body and body ~= "" and (" body=" .. tostring(body)) or ""))
       end
 
       -- Notify UI listeners on evaluation screens (unless silent)
@@ -833,9 +866,9 @@ end
 -- ("ArrowCloud_<P1|P2>_Result<n>.<ext>") so storage stays bounded rather than accumulating a new
 -- file per submission -- NETWORK:HttpRequest's downloadFile option truncates and overwrites an
 -- existing file at that path, so this is safe. (Getting the *displayed* Sprite to actually pick up
--- the new bytes on a reused path is a separate problem -- Sprite:Load() caches by path/texture ID
--- and won't notice the file changed -- handled at display time in
--- createACResultImageDialogActor's applyContent via an explicit Load(nil) before reloading.)
+-- the new bytes on a reused path is a separate problem -- the engine's texture manager caches by
+-- texture ID and won't notice the file changed -- handled at display time in
+-- createACResultImageDialogActor's applyContent by giving each batch its own texture-hint token.)
 -- Calls onComplete(paths) once every URL has been attempted, where `paths` only contains the
 -- local /Downloads/ paths that downloaded successfully.
 local function downloadResultImages(urls, player, onComplete)
@@ -1476,13 +1509,22 @@ local function createACResultImageDialogActor(name, player)
     local w, h = 0, 0
     if image and path and FILEMAN:DoesFileExist(path) then
       image:zoom(1)
-      -- Force an unload before reloading: the same /Downloads/ path is reused across
-      -- submissions (see downloadResultImages), and Sprite:Load(path) short-circuits to the
-      -- already-loaded texture when given a path it's already loaded, ignoring that the file's
-      -- contents changed on disk. Load(nil) drops the cached texture so the following Load(path)
-      -- actually re-reads the file.
-      image:Load(nil)
-      image:Load(path)
+      -- The same /Downloads/ path is reused across submissions (see downloadResultImages), and
+      -- the engine's texture manager caches by texture ID, not file contents. Simply
+      -- Load(path)-ing again -- even after a Load(nil) -- finds the previous texture in the
+      -- manager's map and hands back the OLD pixels: RageTextureManager only deletes a texture
+      -- the moment its refcount hits zero when DelayedTextureDelete=0, and with it set to 1 the
+      -- texture just sits in the map, so players with that preference saw their first-ever
+      -- result image on every later play (field reports, 2026-09).
+      --
+      -- The second argument to Sprite:Load becomes RageTextureID.AdditionalTextureHints, which
+      -- is part of texture-ID identity. A per-batch token there makes each new set of downloads a
+      -- distinct texture ID on the same filename, so the manager always re-reads the file, and it
+      -- costs nothing on disk (there's no FILEMAN:Remove in Lua, so unique filenames would have
+      -- piled up forever). The token must never contain a real hint keyword -- the engine matches
+      -- "dither", "stretch", "mipmaps", "32bpp", "16bpp", "grayscale", "alphamap", "doubleres" by
+      -- substring against filename..hints -- hence the neutral spelling below.
+      image:Load(path, "?gen=" .. tostring(self.imageGeneration or 0))
       local maxW, maxH = ACImageDialogMaxSize()
       local iw, ih = image:GetWidth(), image:GetHeight()
       if iw and ih and iw > 0 and ih > 0 then
@@ -1513,6 +1555,8 @@ local function createACResultImageDialogActor(name, player)
     InitCommand = function(self)
       self.images = {}
       self.imageIndex = 1
+      -- bumped per ShowDialog; see applyContent for why the texture ID has to change per batch
+      self.imageGeneration = 0
       self:visible(false):draworder(200)
       self:xy(_screen.cx, _screen.cy)
     end,
@@ -1553,6 +1597,9 @@ local function createACResultImageDialogActor(name, player)
 
       self.images = params.images
       self.imageIndex = 1
+      -- New batch of downloads, new texture identity. Only here, not per applyContent: paging
+      -- with Next/Prev within one batch should hit the cache, since those bytes haven't changed.
+      self.imageGeneration = (self.imageGeneration or 0) + 1
       applyContent(self)
 
       local mode = params.mode or "center"
@@ -2041,6 +2088,17 @@ moduleRegistration["ScreenEvaluationStage"] = Def.ActorFrame {
     local top = SCREENMAN:GetTopScreen()
     if not top then return end
 
+    -- Opportunistic theme-specific enhancement: if this exact theme's ScreenEvaluation
+    -- common/default.lua is present (it isn't guaranteed to be -- this module needs to keep
+    -- working without it), ask it to also stop its own pane-cycling/event-overlay input
+    -- handling from reacting while we're up, so MenuLeft/MenuRight can't silently cycle the
+    -- panes behind our dialog. Everything below (redirection + our own callback) works
+    -- correctly with or without this.
+    local evalCommon = findEvalCommon(top)
+    if evalCommon then
+      evalCommon:queuecommand("DirectInputToACResultDialog")
+    end
+
     for player in ivalues(PlayerNumber) do
       SCREENMAN:set_input_redirected(player, true)
     end
@@ -2121,6 +2179,13 @@ moduleRegistration["ScreenEvaluationStage"] = Def.ActorFrame {
     self.resultDialogInputHandler = nil
     for player in ivalues(PlayerNumber) do
       SCREENMAN:set_input_redirected(player, false)
+    end
+
+    -- Restore the opportunistic theme-specific enhancement's state too, if present (see
+    -- DirectInputToACResultDialogCommand above).
+    local evalCommon = findEvalCommon(top)
+    if evalCommon then
+      evalCommon:queuecommand("DirectInputFromACResultDialog")
     end
   end,
 
@@ -2477,6 +2542,17 @@ moduleRegistration["ScreenEvaluationNonstop"] = Def.ActorFrame {
     local top = SCREENMAN:GetTopScreen()
     if not top then return end
 
+    -- Opportunistic theme-specific enhancement: if this exact theme's ScreenEvaluation
+    -- common/default.lua is present (it isn't guaranteed to be -- this module needs to keep
+    -- working without it), ask it to also stop its own pane-cycling/event-overlay input
+    -- handling from reacting while we're up, so MenuLeft/MenuRight can't silently cycle the
+    -- panes behind our dialog. Everything below (redirection + our own callback) works
+    -- correctly with or without this.
+    local evalCommon = findEvalCommon(top)
+    if evalCommon then
+      evalCommon:queuecommand("DirectInputToACResultDialog")
+    end
+
     for player in ivalues(PlayerNumber) do
       SCREENMAN:set_input_redirected(player, true)
     end
@@ -2557,6 +2633,13 @@ moduleRegistration["ScreenEvaluationNonstop"] = Def.ActorFrame {
     self.resultDialogInputHandler = nil
     for player in ivalues(PlayerNumber) do
       SCREENMAN:set_input_redirected(player, false)
+    end
+
+    -- Restore the opportunistic theme-specific enhancement's state too, if present (see
+    -- DirectInputToACResultDialogCommand above).
+    local evalCommon = findEvalCommon(top)
+    if evalCommon then
+      evalCommon:queuecommand("DirectInputFromACResultDialog")
     end
   end,
 
@@ -2799,47 +2882,35 @@ moduleRegistration["ScreenSelectMusic"] = Def.ActorFrame {
     end
 
     if sortmenu.wheel_options then
-      -- Place the ArrowCloud login next to the GrooveStats login. In the current
-      -- theme that lives inside the "Advanced" submenu, so target that submenu
-      -- when it exists and fall back to the top level otherwise.
-      local submenu = sortmenu.wheel_options
       local existingIndex = nil
       local insertAfterIndex = nil
 
       for i = 1, #sortmenu.wheel_options do
         local option = sortmenu.wheel_options[i]
-        if option and option[1] and option[1][1] == "" and option[1][2] == "CategoryAdvanced" and type(option[2]) == "table" then
-          submenu = option[2]
-          break
-        end
-      end
-
-      for i = 1, #submenu do
-        local option = submenu[i]
         if option and option[1] and option[1][1] == "ArrowCloud" and option[1][2] == "Login / Re-link" then
           existingIndex = i
           option[2] = hasAnyEligibleQrLoginPlayer
         elseif option and option[1] and option[1][1] == "ArrowCloud" and option[1][2] == "ACLeaderboard" then
           insertAfterIndex = i
-        elseif insertAfterIndex == nil and option and option[1] and option[1][1] == "GrooveStats" and option[1][2] == "GrooveStatsLogin" then
+        elseif insertAfterIndex == nil and option and option[1] and option[1][1] == "NextPlease" and option[1][2] == "SwitchProfile" then
           insertAfterIndex = i
         end
       end
 
-      local loginOption = existingIndex and submenu[existingIndex]
+      local loginOption = existingIndex and sortmenu.wheel_options[existingIndex]
         or { { "ArrowCloud", "Login / Re-link" }, hasAnyEligibleQrLoginPlayer }
 
       if existingIndex ~= nil then
-        table.remove(submenu, existingIndex)
+        table.remove(sortmenu.wheel_options, existingIndex)
         if insertAfterIndex ~= nil and existingIndex < insertAfterIndex then
           insertAfterIndex = insertAfterIndex - 1
         end
       end
 
       if insertAfterIndex ~= nil then
-        table.insert(submenu, insertAfterIndex + 1, loginOption)
+        table.insert(sortmenu.wheel_options, insertAfterIndex + 1, loginOption)
       else
-        table.insert(submenu, loginOption)
+        table.insert(sortmenu.wheel_options, loginOption)
       end
     end
   end,
