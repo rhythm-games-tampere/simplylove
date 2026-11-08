@@ -20,7 +20,7 @@
 -- Simply Love's wheel row is _screen.w/2.125 wide and its own per-row actors right-align
 -- against roughly _screen.w/2.15, so this parks the badge just inside the right edge.
 -- TUNABLE: if the badge lands wrong on another theme, this is the line to change.
-local BADGE_X = _screen.w / 2.15 - 6
+local BADGE_X = _screen.w / 2 - 41
 
 return Def.BitmapText{
 	Name="GolfParBadge",

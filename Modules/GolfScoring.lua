@@ -534,7 +534,10 @@ local function makePlayerDisplay(pn)
 		-- "Par" display covering the original difficulty meter
 		Def.ActorFrame{
 			GolfPositionCommand=function(self)
-				self:xy(diffPos[player].x, diffPos[player].y)
+				-- follow the difficulty meter's X offsets
+				local mods = type(SL) == "table" and SL[pn] and SL[pn].ActiveModifiers
+				local offset = mods and ((tonumber(mods.NoteFieldOffsetX) or 0) + (tonumber(mods.DifficultyMeterOffsetX) or 0)) or 0
+				self:xy(diffPos[player].x + offset * (player == PLAYER_1 and -1 or 1), diffPos[player].y)
 			end,
 
 			-- Green background quad (covers the original 30x30 difficulty quad)
@@ -704,6 +707,8 @@ local selectMusic = Def.ActorFrame{
 		-- Pick up Golf.ini edits made while the game is running.
 		Golf.ClearCache()
 		injectWheelBadges()
+		-- wheel rows re-Set badges that were injected after their first Set
+		MESSAGEMAN:Broadcast("GolfBadgesInjected")
 	end,
 }
 
