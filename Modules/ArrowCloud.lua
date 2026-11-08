@@ -2882,35 +2882,47 @@ moduleRegistration["ScreenSelectMusic"] = Def.ActorFrame {
     end
 
     if sortmenu.wheel_options then
+      -- Place the ArrowCloud login next to the GrooveStats login. In the current
+      -- theme that lives inside the "Advanced" submenu, so target that submenu
+      -- when it exists and fall back to the top level otherwise.
+      local submenu = sortmenu.wheel_options
       local existingIndex = nil
       local insertAfterIndex = nil
 
       for i = 1, #sortmenu.wheel_options do
         local option = sortmenu.wheel_options[i]
+        if option and option[1] and option[1][1] == "" and option[1][2] == "CategoryAdvanced" and type(option[2]) == "table" then
+          submenu = option[2]
+          break
+        end
+      end
+
+      for i = 1, #submenu do
+        local option = submenu[i]
         if option and option[1] and option[1][1] == "ArrowCloud" and option[1][2] == "Login / Re-link" then
           existingIndex = i
           option[2] = hasAnyEligibleQrLoginPlayer
         elseif option and option[1] and option[1][1] == "ArrowCloud" and option[1][2] == "ACLeaderboard" then
           insertAfterIndex = i
-        elseif insertAfterIndex == nil and option and option[1] and option[1][1] == "NextPlease" and option[1][2] == "SwitchProfile" then
+        elseif insertAfterIndex == nil and option and option[1] and option[1][1] == "GrooveStats" and option[1][2] == "GrooveStatsLogin" then
           insertAfterIndex = i
         end
       end
 
-      local loginOption = existingIndex and sortmenu.wheel_options[existingIndex]
+      local loginOption = existingIndex and submenu[existingIndex]
         or { { "ArrowCloud", "Login / Re-link" }, hasAnyEligibleQrLoginPlayer }
 
       if existingIndex ~= nil then
-        table.remove(sortmenu.wheel_options, existingIndex)
+        table.remove(submenu, existingIndex)
         if insertAfterIndex ~= nil and existingIndex < insertAfterIndex then
           insertAfterIndex = insertAfterIndex - 1
         end
       end
 
       if insertAfterIndex ~= nil then
-        table.insert(sortmenu.wheel_options, insertAfterIndex + 1, loginOption)
+        table.insert(submenu, insertAfterIndex + 1, loginOption)
       else
-        table.insert(sortmenu.wheel_options, loginOption)
+        table.insert(submenu, loginOption)
       end
     end
   end,
