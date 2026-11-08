@@ -177,7 +177,7 @@ local function SelfRank(board)
 	end
 end
 
--- callback(rank, total, board_type?) when ranked, callback(false) when on no board,
+-- callback(rank, total) when ranked, callback(false) when not
 -- callback(nil) on failure. Returns the handler or nil.
 function ArrowCloudScores.FetchRank(player, steps, score_type, callback)
 	local pn = ToEnumShortString(player)
@@ -209,10 +209,6 @@ function ArrowCloudScores.FetchRank(player, steps, score_type, callback)
 					local rank, total = SelfRank(board)
 					if rank then return callback(rank, total) end
 				end
-			end
-			for board in ivalues(boards) do
-				local rank, total = SelfRank(board)
-				if rank then return callback(rank, total, tostring(board.type)) end
 			end
 			callback(false)
 		end,

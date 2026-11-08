@@ -90,6 +90,76 @@ local CreateITLBody = function(itlData)
 	)
 end
 
+-- Takes in an actor and both scales the text to fit within the box and
+-- colorizes the text.
+--
+-- We colorize the following:
+-- - Numbers (including decimals) in red if negative, green if positive.
+-- - Quoted strings in green.
+local ScaleAndColorizeBody = function(self, text, height, width, rowHeight, defaultColor)
+	-- We don't want text to run out through the bottom.
+	-- Incrementally adjust the zoom while adjust wrapwdithpixels until it fits.
+	-- Not the prettiest solution but it works.
+	for zoomVal=1.0, 0.1, -0.05 do
+		self:zoom(zoomVal)
+		self:wrapwidthpixels(width/(zoomVal))
+		self:settext(text):visible(true)
+		if self:GetHeight() * zoomVal <= height - rowHeight*1.5 then
+			break
+		end
+	end
+
+	local offset = 0
+	while offset <= #text do
+		-- Search for all numbers (decimals included).
+		-- They may include the +/- prefixes and also potentially %/x as suffixes.
+		local i, j = string.find(text, "[-+]?[%d]*%.?[%d]+[%%x]?", offset)
+		-- No more numbers found. Break out.
+		if i == nil then
+			break
+		end
+		-- Extract the actual numeric text.
+		local substring = string.sub(text, i, j)
+
+		local clr = defaultColor
+
+		-- Except negatives should be red.
+		if substring:sub(1, 1) == "-" then
+			clr = Color.Red
+		-- And positives should be green.
+		elseif substring:sub(1, 1) == "+" then
+			clr = Color.Green
+		end
+
+		self:AddAttribute(i-1, {
+			Length=#substring,
+			Diffuse=clr
+		})
+
+		offset = j + 1
+	end
+
+	offset = 0
+
+	while offset <= #text do
+		-- Search for all quoted strings.
+		local i, j = string.find(text, "\".-\"", offset)
+		-- No more found. Break out.
+		if i == nil then
+			break
+		end
+		-- Extract the actual quoted text.
+		local substring = string.sub(text, i, j)
+
+		self:AddAttribute(i-1, {
+			Length=#substring,
+			Diffuse=Color.Green
+		})
+
+		offset = j + 1
+	end
+end
+
 local ItlPink = color("1,0.2,0.406,1")
 local RpgYellow = color("1,0.972,0.792,1")
 
