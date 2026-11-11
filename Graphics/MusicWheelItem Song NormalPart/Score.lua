@@ -49,7 +49,10 @@ local function Layout(self)
 end
 
 local function Draw(self, song, steps)
-	if PlayerMusicWheelScore(player) == PlayerMusicWheelScore_No or not PROFILEMAN:IsPersistentProfile(player) then return end
+	local mode = PlayerMusicWheelScore(player)
+	if mode == PlayerMusicWheelScore_No or not PROFILEMAN:IsPersistentProfile(player) then return end
+	-- AC Golf PAR instead
+	if mode ~= PlayerMusicWheelScore_ReplaceGrade and type(Golf) == "table" and Golf.GetPar(song, steps) then return end
 	Layout(self)
 
 	local score_type = SL[pn].ActiveModifiers.ShowExScore and CacheType.EX or CacheType.ITG

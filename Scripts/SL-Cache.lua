@@ -1,7 +1,7 @@
 -- Persistent score cache (simplylove.db) keyed by player name and chart hash.
 local sqlite3 = sqlite3 -- Provided by lsqlite3
 
-CacheType = { EX = "ex", ITG = "itg" }
+CacheType = { EX = "ex", ITG = "itg", Golf = "golf" }
 CacheSource = { Local = "local", GrooveStats = "groovestats", ArrowCloud = "arrowcloud" }
 
 local Db = sqlite3 and sqlite3.open("simplylove.db")
