@@ -429,6 +429,14 @@ local t = Def.ActorFrame {
 			{
 				{"", "CategoryAdvanced"},
 				{
+					{ {"NFC", "BindCard"}, function()
+						local screen = SCREENMAN:GetTopScreen()
+
+						local player = sort_wheel.nfc_binding_player
+						return player and PROFILEMAN:IsPersistentProfile(player)
+							and not PROFILEMAN:ProfileWasLoadedFromMemoryCard(player)
+							and screen.CanUseNFC and screen:CanUseNFC()
+					end },
 					{ {"GrooveStats", "Leaderboard"}, function() return GAMESTATE:GetCurrentSong() ~= nil end },
 					{ {"GrooveStats", "GrooveStatsLogin"} },
 					-- Loading songs doesn't work from course mode because it invalidates autogen courses,
@@ -482,6 +490,19 @@ local t = Def.ActorFrame {
 	EnterCategoryMessageCommand=function(self, params)
 		self:playcommand("ToggleCategory", params)
 	end,
+	CodeMessageCommand=function(self, params)
+		if params.Name:match("^SortList") then
+			sort_wheel.nfc_binding_player = params.PlayerNumber
+		end
+	end,
+
+	SetNFCBindingPlayerCommand=function(self, params)
+		if sort_wheel.nfc_binding_player ~= params.Player then
+			sort_wheel.nfc_binding_player = params.Player
+			self:playcommand("AssessAvailableChoices")
+		end
+	end,
+
 	DirectInputToSortMenuCommand=function(self)
 		local screen = SCREENMAN:GetTopScreen()
 		local overlay = self:GetParent()
@@ -525,6 +546,17 @@ local t = Def.ActorFrame {
 	DirectInputToEngineCommand=function(self)
 		DirectInputToEngine(self)
 	end,
+
+	DirectInputToNFCBindingCommand=function(self)
+		local player = self.NFCBindingPlayer
+		self.NFCBindingPlayer = nil
+
+		if not player then return end
+
+		DirectInputToEngine(self)
+		MESSAGEMAN:Broadcast("BeginNFCBinding", {Player=player})
+	end,
+
 	DirectInputToEngineForSongSearchCommand=function(self)
 		DirectInputToEngine(self)
 

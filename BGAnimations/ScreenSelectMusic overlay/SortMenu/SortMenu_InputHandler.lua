@@ -13,6 +13,8 @@ local input = function(event)
 	end
 	
 	if event.type ~= "InputEventType_Release" then
+		sortmenu:playcommand("SetNFCBindingPlayer", {Player=event.PlayerNumber})
+
 		if event.GameButton == "MenuRight" or event.GameButton == "MenuDown" then
 			sort_wheel:scroll_by_amount(1)
 			sortmenu:GetChild("change_sound"):play()
@@ -168,6 +170,9 @@ local input = function(event)
 				elseif focus.new_overlay == "OnlineLobbies" then
 					overlay:queuecommand("DirectInputToEngine")
 					SCREENMAN:SetNewScreen("ScreenOnlineLobbies")
+				elseif focus.new_overlay == "BindCard" then
+					sortmenu.NFCBindingPlayer = event.PlayerNumber
+					sortmenu:queuecommand("DirectInputToNFCBinding")
 				elseif focus.new_overlay == "SwitchProfile" then
 					-- There's a race condition that occurs when a player mashes the Start button
 					-- fast enough, when the Switch Profiles button is highlighted, that causes
