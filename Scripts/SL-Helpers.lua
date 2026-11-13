@@ -634,15 +634,24 @@ IsW0Judgment = function(params, player)
 	return false
 end
 
--- Base (before TimingWindowAdd) of the tighter blue window the player picked, or nil.
+-- Machine-wide 11ms mode for tournament deployments: overrides every player's Blue Window
+-- choice without touching the FA+ window itself, so EX scores stay on the standard window.
+local Force11msMode = true
+
+Is11msForced = function()
+	return Force11msMode and SL.Global.GameMode == "ITG"
+end
+
+-- Base (before TimingWindowAdd) of the tighter blue window in effect for the player, or nil.
 GetTightW0Base = function(mods)
+	if Is11msForced() then return 0.0095 end
 	if mods.TighterFantasticWindow then return 0.0085 end
 	if mods.TighterFantasticWindow11 then return 0.0095 end
 	return nil
 end
 
 GetTightW0Label = function(mods)
-	return mods.TighterFantasticWindow11 and "11ms" or "10ms"
+	return (Is11msForced() or mods.TighterFantasticWindow11) and "11ms" or "10ms"
 end
 
 IsW0TightJudgment = function(params, player)
@@ -679,27 +688,29 @@ IsW011Judgment = function(params, player)
 end
 
 -- -----------------------------------------------------------------------
--- True when the player's blue window is 11ms, either via the 11ms option
+-- True when the player's blue window is 11ms: forced machine-wide, via the 11ms option,
 -- or because the FA+ W0 window itself is 11ms.
 
 Is11msActive = function(player)
 	if SL.Global.GameMode == "Casual" then return false end
 	local mods = SL[ToEnumShortString(player)].ActiveModifiers
+	if Is11msForced() then return true end
 	if mods.TighterFantasticWindow11 and SL.Global.GameMode == "ITG" then return true end
 	return math.abs(GetTimingWindow(1, "FA+") - 0.011) < 0.0001
 end
 
 -- 11ms points = 11ms W0s - dropped holds/rolls - mines hit
 -- 11ms fantastic% = 11ms points / total steps
+-- Returns points, fantastic%, total steps.
 Get11msScore = function(player, ex_counts)
 	local w0 = (SL.Global.GameMode == "ITG" and ex_counts.W0_11 or ex_counts.W0) or 0
 	local points = w0 - (ex_counts.LetGo or 0) - (ex_counts.HitMine or 0)
 
 	local StepsOrTrail = (GAMESTATE:IsCourseMode() and GAMESTATE:GetCurrentTrail(player)) or GAMESTATE:GetCurrentSteps(player)
 	local totalSteps = StepsOrTrail:GetRadarValues(player):GetValue("RadarCategory_TapsAndHolds")
-	if totalSteps <= 0 then return points, 0 end
+	if totalSteps <= 0 then return points, 0, totalSteps end
 
-	return points, math.max(0, points / totalSteps)
+	return points, math.max(0, points / totalSteps), totalSteps
 end
 
 AnyPlayer11msActive = function()
@@ -709,13 +720,23 @@ AnyPlayer11msActive = function()
 	return false
 end
 
--- Score string sent to sync start: 11ms points if any local player is on 11ms, EX score otherwise.
-SyncStartScoreString = function(player, ex_score, ex_counts)
+-- Score sent to sync start: 11ms points out of total steps if any local player is on 11ms, EX score otherwise.
+-- Returns actual points, possible points, formatted score. Receivers rank on the first two and display the third.
+SyncStartScore = function(player, ex_counts, ex_score, ex_points, ex_possible)
 	if AnyPlayer11msActive() then
-		local points = Get11msScore(player, ex_counts)
-		return ("%d"):format(points)
+		local points, _, total_steps = Get11msScore(player, ex_counts)
+		return points, total_steps, ("%d"):format(points)
 	end
-	return ("%.2f"):format(ex_score)
+	return ex_points, ex_possible, ("%.2f"):format(ex_score)
+end
+
+-- Blue and white fantastic counts sent to sync start, split at 11ms whenever SyncStartScore sends 11ms points.
+SyncStartFantasticCounts = function(ex_counts)
+	if SL.Global.GameMode == "ITG" and AnyPlayer11msActive() then
+		local w0_11 = ex_counts.W0_11 or 0
+		return w0_11, ex_counts.W1 + ex_counts.W0 - w0_11
+	end
+	return ex_counts.W0, ex_counts.W1
 end
 
 -- -----------------------------------------------------------------------

@@ -13,13 +13,14 @@ local grade = playerStats:GetGrade()
 if SYNCMAN and SYNCMAN:IsEnabled() then
     local ex_counts = SL[ToEnumShortString(player)].Stages.Stats[SL.Global.Stages.PlayedThisGame + 1].ex_counts
     local ExScore, ActualPoints, ActualPossible = CalculateExScore(player)
-	local ExScoreStr = SyncStartScoreString(player, ExScore, ex_counts)
+	local SyncPoints, SyncPossible, SyncScoreStr = SyncStartScore(player, ex_counts, ExScore, ActualPoints, ActualPossible)
+	local SyncW0, SyncW1 = SyncStartFantasticCounts(ex_counts)
 
 	-- Broadcast final score for each player, used by syncstart-web to save scores
 	if GAMESTATE:IsCourseMode() then
-		SYNCMAN:BroadcastFinalCourseScore(playerStats, ex_counts.W0, ex_counts.W1, ex_counts.W2, ex_counts.W3, ex_counts.W4, ex_counts.W5, ex_counts.Miss, ActualPoints, ActualPossible, ExScoreStr)
+		SYNCMAN:BroadcastFinalCourseScore(playerStats, SyncW0, SyncW1, ex_counts.W2, ex_counts.W3, ex_counts.W4, ex_counts.W5, ex_counts.Miss, SyncPoints, SyncPossible, SyncScoreStr)
 	else
-		SYNCMAN:BroadcastFinalScore(playerStats, ex_counts.W0, ex_counts.W1, ex_counts.W2, ex_counts.W3, ex_counts.W4, ex_counts.W5, ex_counts.Miss, ActualPoints, ActualPossible, ExScoreStr)
+		SYNCMAN:BroadcastFinalScore(playerStats, SyncW0, SyncW1, ex_counts.W2, ex_counts.W3, ex_counts.W4, ex_counts.W5, ex_counts.Miss, SyncPoints, SyncPossible, SyncScoreStr)
 	end
 end
 
