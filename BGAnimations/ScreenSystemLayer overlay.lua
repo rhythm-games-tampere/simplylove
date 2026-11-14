@@ -658,4 +658,6 @@ t[#t+1] = Def.ActorFrame {
 }
 -- -----------------------------------------------------------------------
 
+t[#t+1] = LoadActor(THEME:GetPathB("", "_modules/PadProfiles.lua"))
+
 return t
