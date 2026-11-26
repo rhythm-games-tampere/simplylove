@@ -176,6 +176,8 @@ local GlobalDefaults = {
 				ScreenNameEntry         = ThemePrefs.Get("ScreenNameEntryMenuTimer"),
 			}
 			self.TimeAtSessionStart = nil
+			-- per-profile session stats, see SL_SessionDataForStatistics.lua
+			self.SessionStats = {}
 			self.SampleMusicLoops = ThemePrefs.Get("SampleMusicLoops")
 			self.SampleMusicStartsImmediately = ThemePrefs.Get("SampleMusicStartsImmediately")
 

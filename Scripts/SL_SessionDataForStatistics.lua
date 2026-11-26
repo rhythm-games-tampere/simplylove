@@ -1,45 +1,79 @@
-SessionDataForStatistics = function(player)
-    local totalTime = 0
-    local songsPlayedThisGame = 0
-    local notesHitThisGame = 0
+-- Session stats are kept per profile, not per player side, so switching profiles
+-- mid-session doesn't carry one profile's stats over to the next.
+-- (SL[pn].Stages deliberately follows the side for ScreenEvaluationSummary, so it can't be used here.)
+--
+-- Song time and notes hit are added live during gameplay, so attempts that end
+-- in a restart or a back out still count.
 
-    -- Use pairs here (instead of ipairs) because this player might have late-joined
-    -- which will result in nil entries in the the Stats table, which halts ipairs.
-    -- We're just summing total time anyway, so order doesn't matter.
-    for i,stats in pairs( SL[ToEnumShortString(player)].Stages.Stats ) do
-        totalTime = totalTime + (stats and stats.duration or 0)
-        songsPlayedThisGame = songsPlayedThisGame + (stats and 1 or 0)
-
-        if stats and stats.column_judgments then
-            -- increment notesHitThisGame by the total number of tapnotes hit in this particular stepchart by using the per-column data
-            -- don't rely on the engine's non-Miss judgment counts here for two reasons:
-            -- 1. we want jumps/hands to count as more than 1 here
-            -- 2. stepcharts can have non-1 #COMBOS parameters set which would artbitraily inflate notesHitThisGame
-
-            for column, judgments in ipairs(stats.column_judgments) do
-                for judgment, judgment_count in pairs(judgments) do
-                    -- Early hits are a stored in a table, we want to ignore those for this calculation.
-                    if type(judgment_count) == "number" then
-                        if judgment ~= "Miss" then
-                            notesHitThisGame = notesHitThisGame + judgment_count
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    local hours = math.floor(totalTime/3600)
-    local minutes = math.floor((totalTime-(hours*3600))/60)
-    local seconds = round(totalTime%60)
-
-    return {
-        totalTime = totalTime,
-        hours = hours,
-        minutes = minutes,
-        seconds = seconds,
-        songsPlayedThisGame = songsPlayedThisGame,
-        notesHitThisGame = notesHitThisGame
-    }
+local ProfileKey = function(player)
+	if PROFILEMAN:IsPersistentProfile(player) then
+		return PROFILEMAN:GetProfile(player):GetGUID()
+	end
+	return "Guest" .. ToEnumShortString(player)
 end
 
+-- Each profile's active time only counts while it's joined on a side.
+-- activeSince is set while joined; switching away or unjoining moves the elapsed time into activeTime.
+-- There's no event for those, so this runs whenever session data is created or read.
+local SyncActiveTime = function()
+	local now = GetTimeSinceStart()
+	local joined = {}
+	for player in ivalues(GAMESTATE:GetHumanPlayers()) do
+		joined[ProfileKey(player)] = true
+	end
+
+	for key,record in pairs(SL.Global.SessionStats) do
+		if joined[key] and not record.activeSince then
+			record.activeSince = now
+		elseif not joined[key] and record.activeSince then
+			record.activeTime = record.activeTime + (now - record.activeSince)
+			record.activeSince = nil
+		end
+	end
+end
+
+-- creates the record the first time a profile is seen this session
+GetSessionRecord = function(player)
+	local key = ProfileKey(player)
+	local record = SL.Global.SessionStats[key]
+	if not record then
+		record = { started=GetTimeSinceStart(), activeTime=0, songTime=0, notesHit=0, stagesPlayed={} }
+		SL.Global.SessionStats[key] = record
+	end
+	SyncActiveTime()
+	return record
+end
+
+-- keyed by stage index so reloading ScreenEvaluation doesn't count the same song twice
+MarkSessionSongPlayed = function(player)
+	GetSessionRecord(player).stagesPlayed[SL.Global.Stages.PlayedThisGame + 1] = true
+end
+
+local Summarize = function(record)
+	local songTime = record and record.songTime or 0
+
+	local songsPlayed = 0
+	if record then
+		for _ in pairs(record.stagesPlayed) do songsPlayed = songsPlayed + 1 end
+	end
+
+	local hours = math.floor(songTime/3600)
+	local minutes = math.floor((songTime-(hours*3600))/60)
+	local seconds = round(songTime%60)
+
+	return {
+		totalTime = songTime,
+		-- time this profile was joined; never shorter than the time spent in songs
+		activeTime = math.max(record and (record.activeTime + (record.activeSince and (GetTimeSinceStart() - record.activeSince) or 0)) or 0, songTime),
+		hours = hours,
+		minutes = minutes,
+		seconds = seconds,
+		songsPlayedThisGame = songsPlayed,
+		notesHitThisGame = record and record.notesHit or 0
+	}
+end
+
+SessionDataForStatistics = function(player)
+	SyncActiveTime()
+	return Summarize(SL.Global.SessionStats[ProfileKey(player)])
+end
