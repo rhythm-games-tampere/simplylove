@@ -34,22 +34,26 @@ end
 
 -- -----------------------------------------------------------------------
 
-local af = Def.ActorFrame{ OffCommand=function(self) self:linear(0.1):diffusealpha(0) end }
-
--- only add this InitCommand to the main ActorFrame in EventMode
-if PREFSMAN:GetPreference("EventMode") then
-	af.InitCommand=function(self)
-		-- TimeAtSessionStart will be reset to nil between game sessions
-		-- thus, if it's currently nil, we're loading ScreenSelectMusic
-		-- for the first time this particular game session
-		if SL.Global.TimeAtSessionStart == nil then
-			SL.Global.TimeAtSessionStart = GetTimeSinceStart()
+local af = Def.ActorFrame{
+	OffCommand=function(self) self:linear(0.1):diffusealpha(0) end,
+	InitCommand=function(self)
+		-- starts the session clock for profiles that weren't loaded through a profile switch (e.g. guests)
+		for player in ivalues(GAMESTATE:GetHumanPlayers()) do
+			GetSessionRecord(player)
 		end
 
-		self:SetUpdateFunction( UpdateTimer )
-	end
-end
+		if PREFSMAN:GetPreference("EventMode") then
+			-- TimeAtSessionStart will be reset to nil between game sessions
+			-- thus, if it's currently nil, we're loading ScreenSelectMusic
+			-- for the first time this particular game session
+			if SL.Global.TimeAtSessionStart == nil then
+				SL.Global.TimeAtSessionStart = GetTimeSinceStart()
+			end
 
+			self:SetUpdateFunction( UpdateTimer )
+		end
+	end
+}
 
 -- generic header elements (background Def.Quad, left-aligned screen name)
 af[#af+1] = LoadActor( THEME:GetPathG("", "_header.lua") )

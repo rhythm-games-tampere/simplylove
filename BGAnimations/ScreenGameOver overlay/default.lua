@@ -31,10 +31,17 @@ local t = Def.ActorFrame{
 	}
 }
 
+local line_height = 48
+local profilestats_y = 120
+local horiz_line_y   = 240
+
+-- sits just under the "Triple Cheese Burgers" label (second profile line)
+local burger_y = profilestats_y + line_height + 9
+
 local function drawCheeseBurgers(position, align, calories)
 	local burgerHolder = Def.ActorFrame{
 		InitCommand=function(self) 
-			self:xy(position, 205)
+			self:xy(position, burger_y)
 		end
 	}
 
@@ -56,14 +63,9 @@ local function drawCheeseBurgers(position, align, calories)
 	return burgerHolder
 end
 
-local line_height = 58
-local profilestats_y = 138
-local horiz_line_y   = 288
-local normalstats_y  = 268
 
 for player in ivalues(Players) do
 
-	local stats
 	local x_pos = player==PLAYER_1 and 80 or _screen.w-80
 	local PlayerStatsAF = Def.ActorFrame{ Name="PlayerStatsAF_"..ToEnumShortString(player) }
 
@@ -100,20 +102,7 @@ for player in ivalues(Players) do
 		end
 	}
 
-	-- retrieve general gameplay session stats for which a profile is not needed
-	stats = LoadActor("PlayerStatsWithoutProfile.lua", player)
-
-	-- loop through those stats, adding them to the ActorFrame for this player as BitmapText actors
-	for i,stat in ipairs(stats) do
-		PlayerStatsAF[#PlayerStatsAF+1] = LoadFont("Common Normal")..{
-			Text=stat,
-			InitCommand=function(self)
-				self:diffuse(PlayerColor(player)):zoom(0.95)
-					:xy(x_pos, (line_height*i) + normalstats_y)
-					:maxwidth(150):vertspacing(-1)
-			end
-		}
-	end
+	PlayerStatsAF[#PlayerStatsAF+1] = LoadActor("./SessionStats.lua", {player, x_pos, horiz_line_y})
 
 	t[#t+1] = PlayerStatsAF
 
@@ -124,5 +113,8 @@ for player in ivalues(Players) do
 		t[#t+1] = drawCheeseBurgers(burgerPosition, burgerAlignment, calories)
 	end
 end
+
+-- added last so the cards draw on top of everything else
+t[#t+1] = LoadActor("./InactiveSessionCards.lua", {burger_y - 25, burger_y + 25})
 
 return t
