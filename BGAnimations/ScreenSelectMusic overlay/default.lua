@@ -90,6 +90,7 @@ local af = Def.ActorFrame{
 	LoadActor("./ArrowCloudScores.lua"),
 
 	LoadActor("./SongSearch/default.lua"),
+	LoadActor("./NFC.lua"),
 }
 
 return af
