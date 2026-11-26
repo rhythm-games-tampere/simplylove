@@ -114,4 +114,7 @@ for player in ivalues(Players) do
 	end
 end
 
+-- added last so the cards draw on top of everything else
+t[#t+1] = LoadActor("./InactiveSessionCards.lua", {burger_y - 25, burger_y + 25})
+
 return t

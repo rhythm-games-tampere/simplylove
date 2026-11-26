@@ -41,6 +41,16 @@ GetSessionRecord = function(player)
 		SL.Global.SessionStats[key] = record
 	end
 	SyncActiveTime()
+
+	-- remembered for ScreenGameOver, which lists profiles that are no longer joined
+	record.player = player
+	record.name = PROFILEMAN:IsPersistentProfile(player)
+		and PROFILEMAN:GetProfile(player):GetDisplayName()
+		or THEME:GetString("ScreenSelectProfile", "GuestProfile")
+	if PROFILEMAN:IsPersistentProfile(player) then
+		record.avatar = GetPlayerAvatarPath(player)
+	end
+
 	return record
 end
 
@@ -62,6 +72,9 @@ local Summarize = function(record)
 	local seconds = round(songTime%60)
 
 	return {
+		name = record and record.name,
+		player = record and record.player,
+		avatar = record and record.avatar,
 		totalTime = songTime,
 		-- time this profile was joined; never shorter than the time spent in songs
 		activeTime = math.max(record and (record.activeTime + (record.activeSince and (GetTimeSinceStart() - record.activeSince) or 0)) or 0, songTime),
@@ -76,4 +89,37 @@ end
 SessionDataForStatistics = function(player)
 	SyncActiveTime()
 	return Summarize(SL.Global.SessionStats[ProfileKey(player)])
+end
+
+-- stats for profiles that played this session but aren't joined right now, oldest first
+InactiveSessionData = function()
+	SyncActiveTime()
+	local active = {}
+	for player in ivalues(GAMESTATE:GetHumanPlayers()) do
+		active[ProfileKey(player)] = true
+	end
+
+	local records = {}
+	for key,record in pairs(SL.Global.SessionStats) do
+		if not active[key] and (record.songTime > 0 or record.notesHit > 0 or next(record.stagesPlayed)) then
+			records[#records+1] = record
+		end
+	end
+	table.sort(records, function(a,b) return a.started < b.started end)
+
+	local data = {}
+	for record in ivalues(records) do
+		data[#data+1] = Summarize(record)
+	end
+	return data
+end
+
+-- ScreenGameOver stays up longer when there are many profiles' stats to show
+GameOverTimerSeconds = function()
+	local seconds = (ThemePrefs.Get("VisualStyle") == "SRPG10") and 135 or 23
+	local profiles = #InactiveSessionData() + #GAMESTATE:GetHumanPlayers()
+	if profiles >= 8 then
+		seconds = math.max(seconds, 45)
+	end
+	return seconds
 end
